@@ -307,6 +307,22 @@ cat >> ${jobfile} << EOFB
 ##SBATCH --mail-user=xxx@noaa.gov
 EOFB
 
+else if (${ICE_MACHINE} =~ wcoss2*) then
+cat >> ${jobfile} << EOFB
+#PBS -N ${ICE_CASENAME}
+#PBS -o ${ICE_CASENAME}
+##SBATCH --partition=hera
+##SBATCH --qos=${queue}
+#PBS -A ${acct}
+#PBS -l walltime=${batchtime}
+#PBS --nodes=${nnodes}
+#PBS --ntasks-per-node=${taskpernodelimit}
+##SBATCH --cpus-per-task=${nthrds}
+#PBS -j -oe slurm%j.err
+##SBATCH --mail-type FAIL
+##SBATCH --mail-user=xxx@noaa.gov
+EOFB
+
 else if (${ICE_MACHINE} =~ orion*) then
 cat >> ${jobfile} << EOFB
 #SBATCH -J ${ICE_CASENAME}

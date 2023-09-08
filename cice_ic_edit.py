@@ -72,6 +72,14 @@ for name, var in model_in.variables.items():
       vsnon = numpy.zeros((5,116,100))
       model_out.variables[name][:] = 0.0
 
+    # To trim out excessively thin or low concentration ice, 
+    #   save ai and hi aside, then reprocess prior to write out
+    if (name == 'aicen' ):
+      tmp_aice = model_out.variables['aicen'][:] 
+    if (name == 'vicen' ):
+      tmp_vice = model_out.variables['vicen'][:] 
+
+
     if (name == "qsno001"):
         t = model_in.variables["Tsfcn"][:]
         #v = model_in.variables["vsnon"][:]
@@ -81,11 +89,11 @@ for name, var in model_in.variables.items():
         model_out.variables["qsno001"][:] = x
 
 # Touch up hi and aice -- remove very low concentrations and/or thicknesses:
-aice = model_out.variables['aicen'][0]
-hi   = model_out.variables['vicen'][0]
+aice = tmp_aice[0]
+hi   = tmp_vice[0]
 for k in range (1, 5):
-  aice += model_out.variables['aicen'][k] # ncat, nj, ni
-  hi   += model_out.variables['vicen'][k]
+  aice += tmp_aice[k] # ncat, nj, ni
+  hi   += tmp_vice[k]
 
 print("ai, hi: ",aice.max(), aice.min(), hi.max(), hi.min() )
 
@@ -98,10 +106,26 @@ indices = mask2.nonzero()
 for k in range(0, len(indices[0])):
   i = indices[1][k]
   j = indices[0][k]
-  aice[j,i] = 0.0
-  hi[j,i]   = 0.0
-  model_out.variables['aicen'][:,j,i] = 0.0
-  model_out.variables['vicen'][:,j,i] = 0.0
+  tmp_aice[:,j,i] = 0.0
+  tmp_vice[:,j,i] = 0.0
+  model_out.variables['qice001'][:,j,i]  = 0.0
+  model_out.variables['qice002'][:,j,i]  = 0.0
+  model_out.variables['qice003'][:,j,i]  = 0.0
+  model_out.variables['qice004'][:,j,i]  = 0.0
+  model_out.variables['qice005'][:,j,i]  = 0.0
+  model_out.variables['qice006'][:,j,i]  = 0.0
+  model_out.variables['qice007'][:,j,i]  = 0.0
+
+
+model_out.variables['aicen'] = tmp_aice
+model_out.variables['vicen'] = tmp_vice
+#model_out.variables['qice001'] = qice001
+#model_out.variables['qice002'] = qice002
+#model_out.variables['qice003'] = qice003
+#model_out.variables['qice004'] = qice004
+#model_out.variables['qice005'] = qice005
+#model_out.variables['qice006'] = qice006
+#model_out.variables['qice007'] = qice007
 
 
 

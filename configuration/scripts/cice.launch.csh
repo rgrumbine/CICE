@@ -240,6 +240,12 @@ srun -n ${ntasks} -c ${nthrds} ./cice >&! \$ICE_RUNLOG_FILE
 EOFR
 
 #=======
+else if (${ICE_MACHCOMP} =~ wcoss2*) then
+cat >> ${jobfile} << EOFR
+srun -n ${ntasks} -c ${nthrds} ./cice >&! \$ICE_RUNLOG_FILE
+EOFR
+
+#=======
 else if (${ICE_MACHCOMP} =~ orion*) then
 cat >> ${jobfile} << EOFR
 srun -n ${ntasks} -c ${nthrds} ./cice >&! \$ICE_RUNLOG_FILE
@@ -248,7 +254,7 @@ EOFR
 #=======
 else if (${ICE_MACHCOMP} =~ high_Sierra*) then
 cat >> ${jobfile} << EOFR
-mpirun -np ${ntasks} ./cice >&! \$ICE_RUNLOG_FILE
+mpirun --oversubscribe -np ${ntasks} ./cice >&! \$ICE_RUNLOG_FILE
 #./cice >&! \$ICE_RUNLOG_FILE
 EOFR
 

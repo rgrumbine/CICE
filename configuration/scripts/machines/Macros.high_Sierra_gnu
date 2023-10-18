@@ -18,10 +18,10 @@ else
 endif
 
 FC := mpif90
-
-MPICC:= 
-
+CC := mpicc
+MPICC:= mpicc 
 MPIFC:= mpif90
+
 LD:= $(FC)
 
 NETCDF_PATH := $(NETCDF)
@@ -37,7 +37,7 @@ else
 endif
 
 LIB_MPI := 
-SCC:=gcc 
+SCC:=mpicc 
 SFC:= 
 
 ifeq ($(ICE_THREADED), true) 

@@ -1,0 +1,123 @@
+# 2 cases (T/F, 2 numbers, 2 names)
+    ssh_stress      , 'geostrophic', ['geostrophic', 'coupled'] 
+    evp_algorithm   , 'standard_2d', [ 'standard_2d' or 'shared_mem_1d' ]
+    frzpnd          , 'hlid'       , Stefan refreezing of melt ponds -- ['hlid' or 'cesm']
+    conduct         , 'bubbly'     , [ 'bubbly' or 'MU71' ]
+    capping_method  , 'max'        , [ 'max' or 'min' ]
+    advection       , 'remap'      , [ 'remap' or 'upwind' ]
+    krdg_partic     , 1            , [ 0,1 ] -- old, new versions of ridging
+    krdg_redist     , 1            , [ 0,1 ] -- old, new versions of ridging
+    visc_method     , 'avg_zeta'   , ['avg_strength' or 'avg_zeta'] -- method for calculating viscosities
+    albedo_type     , 'ccsm3'      , ['ccsm3' or 'constant']
+    algo_nonlin     , 'picard'     , ['picard', 'anderson']
+    snw_ssp_table   , 'test'       , ['test', 'snicar']
+    kridge          , 1            , [-1, 1] disabled, enabled
+    ktransport      , 1            , [-1, 1] disabled, enabled
+    kitd            , 1            , [0 or 1] (delta fn, linear remap)
+    use_mean_vrel   , .true.       , [T/F] 
+    seabed_stress   , .false.      , [T/F] -- calculate seabed stress
+    sw_redist       , .false.      , [T/F] -- redistribute internal shortwave to surface
+    snwgrain        , .false.      , [T/F] activate snow grain metamorphosis
+    calc_dragio     , .false.      , [T/F] calculate dragio from iceruf_ocn and thickness_ocn_layer1
+    formdrag        , .false.      , [T/F] calculate form drag
+    calc_Tsfc       , .true.       , [T/F] calculate t surface
+    calc_strair     , .true.       , [T/F] calculate wind stress
+    highfreq        , .false.      , [T/F] high frequency atmospheric coupling
+    update_ocn_f    , .false.      , [T/F] include frazil ice fluxes in ocean flux fields
+    l_mpond_fresh   , .false.      , [T/F] retain topo pond water until ponds drain
+    rotate_wind     , .true.       , [T/F] rotate wind/stress components to computational grid
+    oceanmixed_ice  , .true.       , [T/F] use internal ocean mixed layer
+    use_smliq_pnd   , .false.      , [T/F] use liquid in snow for ponds
+    revised_evp     , .false.      , [T/F], if true used revised EVP parameters and approach
+    seabed_stress_method , 'LKD'   , method for calculating, ['LKD' or 'probabilistic' ]
+    fe_data_type    , 'default'    , forcing value for iron [ 'default, 'climatology' ]
+    saltflux_option , 'constant'   , form of coupled salt flux -- [ 'constant', 'prognostic' ]
+    default_season  , 'winter'     , season from which initial values of forcing are set -- [ 'winter', 'summer' ]
+
+
+# 3 cases
+    shortwave         , 'dEdd'       , ['ccsm3', 'dEdd', 'dEdd_snicar_ad']
+    precond           , 'pgmres'     , ['diag', 'ident', 'pgmres'] -- preconditioning by: jacobi, none, gmres
+    ktherm            , 2            , [-1, 1, 2] (off, Bitz+Lipscomb 1999, mushy)
+    atmbndy           , 'similarity' , atm boundary layer param -- [ 'similarity', 'constant', 'mixed' ]
+    snw_aging_table   , 'test'       , snow aging table [ 'file', 'snicar', 'test' ]
+
+
+# 4 or more:
+    kdyn            , 1            , [1, 2, 3, 0, -1 (EVP, EAP, VP, off, off) ]
+    atm_data_type   , 'JRA55'      , source of atmospheric forcing ['box2001', 'default', 'hycom', 'JRA55', 'JRA55do', 'monthly', 'ncar', 'oned' ] 
+    ocn_data_type   , 'default'    , source of ocean sst, sss data ['clim', 'default', 'hycom', 'ncar']
+    bgc_data_type   , 'default'    , source of silicate and nitrate data ['clim', 'default','hycom', 'ncar' ]
+    tfrz_option     , 'mushy'      , form of ocean freezing temperature -- [ 'mushy', 'minus1p8', 'linear_salt', 'constant ]
+    snwredist       , 'none'       , type of snow redistribution -- [ 'bulk', 'ITD', 'ITDrdg', 'none' ]
+
+
+
+# Arithmetic range
+    a_rapid_mode      ,  0.5e-3      , brine channel diameter RG: [0.1-5]?
+    aspect_rapid_mode ,     1.0      , brine convection aspect ratio RG: [0.1-10]?
+    albsnowi          , 0.70         , cold snow near IR albedo RG: [0.3, 0.9]
+    albsnowv          , 0.98         , cold snow visual albedo RG: [0.4,0.99]
+    Cstar             , 20           , constant in Hibler strength formula RG: [2,200]
+    atmiter_conv      , 0.0d0        , convergence criterion for ustar RG: [0, 1] 
+    phi_c_slow_mode   ,    0.05      , critical liquid fraction RG: [0,1]
+    Rac_rapid_mode    ,    10.0      , critical rayleigh number RG: [1-100]?
+    dT_mlt            , 1.5          , delta temperature per delta grain radius RG: [0.1,10]
+    rhosnew           ,  100.0       , density new snow RG: [ 50, 300 ] 
+    rhosmax           ,  450.0       , density snow maximum RG: [100,917]
+    rhosmin           ,  100.0       , density snow minimum RG: [50, 300] 
+    floediam          , 300.0d0      , effective floe diameter for lateral melt RG [30-10000]?
+    elasticDamp       , 0.36d0       , elastic damping E, RG: [0,1]
+    sw_frac           , 0.9d0        , fraction redistributed  RG: [0.1,0.99]
+    maxits_nonlin     , 10           , max iterations for nonlinear VP solver RG: [5-40]
+    rfracmax          , 1.           , max melt water fraction added to ponds RG: [0,1]
+    threshold_hw      , 30.          , maximum depth for grounding (landfast parameter) RG: [5-50]
+    Tliquidus_max     , -0.1d0       , maximum liquidus temperature of mush RG: [0 to -2 C]
+    rfracmin          , 0.15         , min melt water fraction added to ponds RG: [0,1]
+    hi_min            , 0.01d0       , minimum thickness for thinnest category RG: [0.001-0.5]?
+    hfrazilmin        , 0.05d0       , minimum thickness of new frazil ice RG [0.001-0.5]?
+    natmiter          , 5            , number of atmospheric boundary layer iterations RG: [1,10]
+    ndte              , 240          , number of subcycles RG: [20,480]
+    R_ice             , 0.           , parameter for dEdd ice albedo  RG: [? delta eddington tunings]
+    R_pnd             , 0.           , parameter for dEdd pond albedo RG: [? delta eddington tunings]
+    R_snw             , 1.5          , parameter for dEdd snow albedo RG: [? delta eddington tunings]
+    e_plasticpot      , 2.           , plastic curve minor/major axis ratio   RG: [1-20]
+    Cf                , 17.          , ratio of ridging work to PE change in ridging RG: [2-100]
+    ice_ref_salinity  , 4.0          , reference salinity for ice-ocean exchanges RG: [1,15]
+    trestore          ,  90          , restoring time scale, days RG: [5,540]
+    hs0               , 0.           , snow depth at which transition to ice occurs (dEdd) RG: [0,0.1]
+    emissivity        , 0.985        , snow/ice emissivity RG: [0.95,0.999]
+    phi_i_mushy       ,    0.85      , solid fraction at lower boundary RG: [0,1]
+    kstrength         , 1            , strength formulation, [1,0]
+    ksno              , 0.3d0        , thermal conductivity of snow RG: [0.1,1]?
+    albicei           , 0.36         , thick ice near IR albedo RG: [0.2,0.8]
+    albicev           , 0.78         , thick ice visual albedo RG: [0.4,0.9]
+    ahmax             , 0.3          , thickness above which albedo is constant RG: [0.1, 3.0]
+    e_yieldcurve      , 2.           , yield curve minor/major axis ratio   RG: [1-20]
+
+
+
+# Logarithmic range
+    deltaminEVP     , 1e-11        , min delta for evp RG: [10x,0.1x]
+    deltaminVP      , 2e-9         , min delta for vp RG: [10x,0.1x]  
+    ustar_min       , 0.0005       , minimum friction velocity under ice RG: [0.1x,10x]
+    windmin         ,   10.0       , minimum wind speed to compact snow RG: [0.1x,10x]
+    brlx            , 300.0        , momentum relaxation constant RG [0.1x,10x]
+    hp1             , 0.01         , critical ice lid thickness for topo ponds (dEdd) RG: [0.1x,10x]
+    pndaspect       , 0.8          , depth:area aspect ratio of ponds RG: [0.1x,10x]
+    dSdt_slow_mode    , -5.0e-8  , drainage strength parameter RG: [0.1x,10x]
+    mu_rdg          , 3            , e-folding scale of ridged ice RG: [0.1x,10x]
+    snwlvlfac       ,    0.3       , fractional increase in snow depth for ridge redist RG: [0.1x,10x]
+    iceruf_ocn      , 0.03         , ice basal roughness w. ocean RG: [0.1x,10x]
+    Pstar           , 2.75e4       , ice strength parameter RG: [100x, 0.01x]
+    iceruf          , 0.0005       , ice surface roughness w. atmosphere RG: [0.1x,10x]
+    rsnw_mlt        , 1500.        , melting snow grain radius (micron?) RG: [0.1x, 10x]
+    kalg            , 0.6          , absorption coefficient for algae RG: [0.1x, 10x]
+    rsnw_tmax       , 1500.0       , radius maximum for snow, microns RG: [0.1x,10x]
+    rsnw_fall       ,  100.0       , radius of freshly fallen snow, microns RG: [0.1x,10x]
+    hs1             , 0.03         , snow depth transition to pond ice RG: [0.1x,10x]
+    arlx            , 300.0        , stress relaxation constant RG [0.1x,10x]
+    dpscale         , 1.e-3        , time scale for flushing in permeable ice RG: [0.1x,10x]
+    drhosdwind      ,   27.3       , wind compaction factor for snow kg*x/m^4 RG: [0.1x,10x]
+
+    Ktens           , 0.           , Tensile strength of ice RG: [http://dx.doi.org/10.1175/2009JPO4105.1.]

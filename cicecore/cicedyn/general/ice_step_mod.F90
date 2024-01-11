@@ -617,7 +617,7 @@
       use ice_calendar, only: yday
       use ice_domain_size, only: ncat, nilyr, nslyr, nblyr, nfsd
       use ice_flux, only: fresh, frain, fpond, frzmlt, frazil, frz_onset, &
-          update_ocn_f, fsalt, Tf, sss, salinz, fhocn, rside, fside, wlat, &
+          fsalt, Tf, sss, salinz, fhocn, rside, fside, wlat, &
           meltl, frazil_diag
       use ice_flux_bgc, only: flux_bio, faero_ocn, &
           fiso_ocn, HDO_ocn, H2_16O_ocn, H2_18O_ocn
@@ -708,7 +708,6 @@
                       fresh      = fresh     (i,j,  iblk), &
                       fsalt      = fsalt     (i,j,  iblk), &
                       fhocn      = fhocn     (i,j,  iblk), &
-                      update_ocn_f = update_ocn_f,         &
                       bgrid      = bgrid,                  &
                       cgrid      = cgrid,                  &
                       igrid      = igrid,                  &
@@ -758,7 +757,7 @@
       use ice_state, only: aicen, trcrn, vicen, vsnon, &
                            aice,  trcr,  vice,  vsno, aice0, trcr_depend, &
                            bound_state, trcr_base, nt_strata, n_trcr_strata
-      use ice_flux,  only: Tf 
+      use ice_flux,  only: Tf
       use ice_timers, only: ice_timer_start, ice_timer_stop, timer_bound, timer_updstate
 
       real (kind=dbl_kind), intent(in) :: &

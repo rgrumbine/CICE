@@ -5,11 +5,12 @@
 Index of primary variables and parameters 
 ==========================================
 
-This index defines many of the symbols used frequently in the CICE model
-code.  Namelist variables are partly included here but also documented
-elsewhere, see Section :ref:`tabnamelist`. All
-quantities in the code are expressed in MKS units (temperatures may take
+This index defines many (but not all) of the symbols used frequently in the CICE model
+code.  All quantities in the code are expressed in MKS units (temperatures may take
 either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
+
+Namelist variables are partly included here, but they are fully documented in 
+section :ref:`tabnamelist`. 
 
 .. csv-table:: *Alphabetical Index*
    :header: " ", " ", " "
@@ -115,6 +116,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "cosw", "cosine of the turning angle in water", "1."
    "coszen", "cosine of the zenith angle", ""
    "Cp", "proportionality constant for potential energy", "kg/m\ :math:`^2`/s\ :math:`^2`"
+   "cpl_frazil", ":math:`\bullet` type of frazil ice coupling", ""
    "cp_air", "specific heat of air", "1005.0 J/kg/K"
    "cp_ice", "specific heat of fresh ice", "2106. J/kg/K"
    "cp_ocn", "specific heat of sea water", "4218. J/kg/K"
@@ -323,6 +325,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "history_format", "history file format", ""
    "history_precision", "history output precision: 4 or 8 byte", "4"
    "hist_time_axis", "history file time axis interval location: begin, middle, end", "end"
+   "hist_suffix", "suffix to `history_file` in filename. x means no suffix", "x,x,x,x,x"
    "hm", "land/boundary mask, thickness (T-cell)", ""
    "hmix", "ocean mixed layer depth", "20. m"
    "hour", "hour of the year", ""

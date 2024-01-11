@@ -2,8 +2,8 @@
 
 .. _case_settings:
 
-Case Settings
-=====================
+Case Settings, Model Namelist, and CPPs
+==========================================
 
 There are two important files that define the case, **cice.settings** and 
 **ice_in**.  **cice.settings** is a list of env variables that define many
@@ -36,8 +36,8 @@ can be found in :ref:`cicecpps`.  The following CPPs are available.
    "NO_F2003", "Turns off some Fortran 2003 features"
    "NO_I8", "Converts integer*8 to integer*4.  This could have adverse affects for certain algorithms including the ddpdd implementation associated with the ``bfbflag``"
    "NO_R16", "Converts real*16 to real*8.  This could have adverse affects for certain algorithms including the lsum16 implementation associated with the ``bfbflag``"
+   "NO_SNICARHC", "Does not compile hardcoded (HC) 5 band snicar tables tables needed by ``shortwave=dEdd_snicar_ad``. May reduce compile time."
    "USE_NETCDF", "Turns on netcdf code.  This is normally on and is needed for released configurations.  An older value, ncdf, is still supported"
-   "USE_SNICARHC", "Includes compilation of large dEdd hardcoded (HC) SNICAR table in Icepack"
    "",""
    "**Application Macros**", ""
    "CESMCOUPLED", "Turns on code changes for the CESM coupled application                          "
@@ -130,7 +130,7 @@ can be modified as needed.
 .. _tabnamelist:
 
 
-Table of namelist options
+Tables of Namelist Options
 -------------------------------
 
 CICE reads a namelist input file, **ice_in**, consisting of several namelist groups.  The tables below
@@ -198,6 +198,7 @@ setup_nml
    "``history_format``", "``default``", "read/write history files in default format", "``default``"
    "", "``pio_pnetcdf``", "read/write restart files with pnetcdf in pio", ""
    "``history_precision``", "integer", "history file precision: 4 or 8 byte", "4"
+   "``hist_suffix``", "character array", "appended to history_file when not x", "``x,x,x,x,x``"
    "``hist_time_axis``","character","history file time axis interval location: begin, middle, end","end"
    "``ice_ic``", "``default``", "equal to internal", "``default``"
    "", "``internal``", "initial conditions set based on ice\_data\_type,conc,dist inputs", ""
@@ -621,6 +622,7 @@ forcing_nml
    "", "``monthly``", "monthly forcing data", ""
    "", "``ncar``", "NCAR bulk forcing data", ""
    "", "``oned``", "column forcing data", ""
+   "``atm_data_version``","string", "date of atm data forcing file creation", "``_undef``"
    "``bgc_data_dir``", "string", "path to oceanic forcing data directory", "'unknown_bgc_data_dir'"
    "``bgc_data_type``", "``clim``", "bgc climatological data", "``default``"
    "", "``default``", "constant values defined in the code", ""
@@ -629,6 +631,9 @@ forcing_nml
    "``calc_strair``", "``.false.``", "read wind stress and speed from files", "``.true.``"
    "", "``.true.``", "calculate wind stress and speed", ""
    "``calc_Tsfc``", "logical", "calculate surface temperature", "``.true.``"
+   "``cpl_frazil``", "``external``", "frazil water/salt fluxes are handled outside of Icepack", "``fresh_ice_correction``"
+   "", "``fresh_ice_correction``", "correct fresh-ice frazil water/salt fluxes for mushy physics", ""
+   "", "``internal``", "send full frazil water/salt fluxes for mushy physics", ""
    "``default_season``", "``summer``", "forcing initial summer values", "``winter``"
    "", "``winter``", "forcing initial winter values", ""
    "``emissivity``", "real", "emissivity of snow and ice", "0.985"

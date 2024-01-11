@@ -49,6 +49,7 @@
     histfreq_n     =  1 , 1 , 1 , 1 , 1
     histfreq_base  = 'zero','zero','zero','zero','zero'
     hist_avg       = .true.,.true.,.true.,.true.,.true.
+    hist_suffix    = 'x','x','x','x','x'
     history_dir    = './history/'
     history_file   = 'iceh'
     history_precision = 4
@@ -271,6 +272,7 @@
     precip_units    = 'mm_per_month'
     default_season  = 'winter'
     atm_data_type   = 'ncar'
+    atm_data_version = '_undef'
     ocn_data_type   = 'default'
     bgc_data_type   = 'default'
     fe_data_type    = 'default'

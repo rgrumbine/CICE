@@ -86,6 +86,7 @@ contains
     use ice_forcing          , only: init_snowtable
     use ice_forcing_bgc      , only: get_forcing_bgc, get_atm_bgc
     use ice_forcing_bgc      , only: faero_default, alloc_forcing_bgc, fiso_default
+    use ice_grid             , only: dealloc_grid
     use ice_history          , only: init_hist, accum_hist
     use ice_restart_shared   , only: restart, runtype
     use ice_init             , only: input_data, init_state
@@ -200,6 +201,8 @@ contains
 
     call init_flux_atm        ! initialize atmosphere fluxes sent to coupler
     call init_flux_ocn        ! initialize ocean fluxes sent to coupler
+
+    call dealloc_grid         ! deallocate temporary grid arrays
 
   end subroutine cice_init2
 

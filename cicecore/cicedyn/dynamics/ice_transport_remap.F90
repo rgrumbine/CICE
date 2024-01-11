@@ -308,12 +308,12 @@
       !  regions are adjusted to obtain the desired area.
       ! If false, edgearea is computed in locate_triangles and passed out.
       !
-      ! l_fixed_area = .false. has been the default approach in CICE. It is 
-      ! used like this for the B-grid. However, idealized tests with the 
-      ! C-grid have shown that l_fixed_area = .false. leads to a checkerboard 
-      ! pattern in prognostic fields (e.g. aice). Using l_fixed_area = .true. 
+      ! l_fixed_area = .false. has been the default approach in CICE. It is
+      ! used like this for the B-grid. However, idealized tests with the
+      ! C-grid have shown that l_fixed_area = .false. leads to a checkerboard
+      ! pattern in prognostic fields (e.g. aice). Using l_fixed_area = .true.
       ! eliminates the checkerboard pattern in C-grid simulations.
-      ! 
+      !
       !-------------------------------------------------------------------
 
       if (grid_ice == 'CD' .or. grid_ice == 'C') then
@@ -647,11 +647,12 @@
       endif  ! nghost
 
       ! tcraig, this OMP loop sometimes fails with cce/14.0.3, compiler bug??
-      !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block,n,  &
-      !$OMP                     edgearea_e,edgearea_n,edge,iflux,jflux, &
-      !$OMP                     xp,yp,indxing,indxjng,mflxe,mflxn, &
-      !$OMP                     mtflxe,mtflxn,triarea,istop,jstop,l_stop) &
-      !$OMP SCHEDULE(runtime)
+      ! TILL I can trigger the same with ifort (IFORT) 18.0.0 20170811
+!TILL      !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block,n,  &
+!TILL      !$OMP                     edgearea_e,edgearea_n,edge,iflux,jflux, &
+!TILL      !$OMP                     xp,yp,indxing,indxjng,mflxe,mflxn, &
+!TILL      !$OMP                     mtflxe,mtflxn,triarea,istop,jstop,l_stop) &
+!TILL      !$OMP SCHEDULE(runtime)
       do iblk = 1, nblocks
 
          l_stop = .false.
@@ -865,7 +866,7 @@
          enddo                  ! n
 
       enddo                     ! iblk
-      !$OMP END PARALLEL DO
+!TILL      !$OMP END PARALLEL DO
 
       end subroutine horizontal_remap
 
@@ -1725,7 +1726,7 @@
          dpy          , & ! y coordinates of departure points at cell corners
          dxu          , & ! E-W dimension of U-cell (m)
          dyu          , & ! N-S dimension of U-cell (m)
-         earea        , & ! area of E-cell 
+         earea        , & ! area of E-cell
          narea            ! area of N-cell
 
       real (kind=dbl_kind), dimension (nx_block,ny_block,0:nvert,ngroups), intent(out) :: &
@@ -1762,8 +1763,8 @@
          ishift_br, jshift_br , & ! i,j indices of BR cell relative to edge
          ishift_tc, jshift_tc , & ! i,j indices of TC cell relative to edge
          ishift_bc, jshift_bc , & ! i,j indices of BC cell relative to edge
-         is_l, js_l           , & ! i,j shifts for TL1, BL2 for area consistency 
-         is_r, js_r           , & ! i,j shifts for TR1, BR2 for area consistency 
+         is_l, js_l           , & ! i,j shifts for TL1, BL2 for area consistency
+         is_r, js_r           , & ! i,j shifts for TR1, BR2 for area consistency
          ise_tl, jse_tl       , & ! i,j of TL other edge relative to edge
          ise_bl, jse_bl       , & ! i,j of BL other edge relative to edge
          ise_tr, jse_tr       , & ! i,j of TR other edge relative to edge
@@ -1871,7 +1872,7 @@
 
       areafac_c(:,:)  = c0
       areafac_ce(:,:) = c0
-      
+
       do ng = 1, ngroups
          do j = 1, ny_block
          do i = 1, nx_block
@@ -1908,7 +1909,7 @@
          ishift_bc =  0
          jshift_bc =  0
 
-         ! index shifts for TL1, BL2, TR1 and BR2 for area consistency 
+         ! index shifts for TL1, BL2, TR1 and BR2 for area consistency
 
          is_l = -1
          js_l =  0
@@ -1936,7 +1937,7 @@
          enddo
 
          ! area scale factor for other edge (east)
-         
+
          do j = 1, ny_block
          do i = 1, nx_block
             areafac_ce(i,j) = earea(i,j)
@@ -1960,7 +1961,7 @@
          ishift_bc =  0
          jshift_bc =  0
 
-         ! index shifts for TL1, BL2, TR1 and BR2 for area consistency 
+         ! index shifts for TL1, BL2, TR1 and BR2 for area consistency
 
          is_l =  0
          js_l =  1
@@ -2114,11 +2115,11 @@
          !-------------------------------------------------------------------
          ! Locate triangles in TL cell (NW for north edge, NE for east edge)
          ! and BL cell (W for north edge, N for east edge).
-         ! 
+         !
          ! areafact_c or areafac_ce (areafact_c for the other edge) are used
-         ! (with shifted indices) to make sure that a flux area on one edge 
-         ! is consistent with the analogous area on the other edge and to 
-         ! ensure that areas add up when using l_fixed_area = T. See PR #849 
+         ! (with shifted indices) to make sure that a flux area on one edge
+         ! is consistent with the analogous area on the other edge and to
+         ! ensure that areas add up when using l_fixed_area = T. See PR #849
          ! for details.
          !
          !-------------------------------------------------------------------
@@ -2476,7 +2477,7 @@
             iflux   (i,j,ng) = i + ishift_tc
             jflux   (i,j,ng) = j + jshift_tc
             areafact(i,j,ng) = -areafac_c(i,j)
- 
+
             ! TC2a (group 5)
 
             ng = 5
@@ -2489,7 +2490,7 @@
             iflux   (i,j,ng) = i + ishift_tc
             jflux   (i,j,ng) = j + jshift_tc
             areafact(i,j,ng) = -areafac_c(i,j)
- 
+
             ! TC3a (group 6)
 
             ng = 6

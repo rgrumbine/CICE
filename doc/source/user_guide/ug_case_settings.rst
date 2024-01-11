@@ -2,8 +2,8 @@
 
 .. _case_settings:
 
-Case Settings
-=====================
+Case Settings, Model Namelist, and CPPs
+==========================================
 
 There are two important files that define the case, **cice.settings** and 
 **ice_in**.  **cice.settings** is a list of env variables that define many
@@ -36,6 +36,7 @@ can be found in :ref:`cicecpps`.  The following CPPs are available.
    "NO_F2003", "Turns off some Fortran 2003 features"
    "NO_I8", "Converts integer*8 to integer*4.  This could have adverse affects for certain algorithms including the ddpdd implementation associated with the ``bfbflag``"
    "NO_R16", "Converts real*16 to real*8.  This could have adverse affects for certain algorithms including the lsum16 implementation associated with the ``bfbflag``"
+   "NO_SNICARHC", "Does not compile hardcoded (HC) 5 band snicar tables tables needed by ``shortwave=dEdd_snicar_ad``. May reduce compile time."
    "USE_NETCDF", "Turns on netcdf code.  This is normally on and is needed for released configurations.  An older value, ncdf, is still supported"
    "",""
    "**Application Macros**", ""
@@ -121,6 +122,7 @@ can be modified as needed.
    "ICE_QUEUE", "string", "batch queue name", "set by cice.setup or by default"
    "ICE_THREADED", "true, false", "force threading in compile, will always compile threaded if ICE_NTHRDS :math:`> 1`", "false"
    "ICE_COMMDIR", "mpi, serial", "specify infrastructure comm version", "set by ICE_NTASKS"
+   "ICE_SNICARHC", "true, false", "turn on hardcoded (HC) SNICAR tables in Icepack", "false"
    "ICE_BLDDEBUG", "true, false", "turn on compile debug flags", "false"
    "ICE_COVERAGE", "true, false", "turn on code coverage flags", "false"
 
@@ -128,7 +130,7 @@ can be modified as needed.
 .. _tabnamelist:
 
 
-Table of namelist options
+Tables of Namelist Options
 -------------------------------
 
 CICE reads a namelist input file, **ice_in**, consisting of several namelist groups.  The tables below
@@ -196,6 +198,7 @@ setup_nml
    "``history_format``", "``default``", "read/write history files in default format", "``default``"
    "", "``pio_pnetcdf``", "read/write restart files with pnetcdf in pio", ""
    "``history_precision``", "integer", "history file precision: 4 or 8 byte", "4"
+   "``hist_suffix``", "character array", "appended to history_file when not x", "``x,x,x,x,x``"
    "``hist_time_axis``","character","history file time axis interval location: begin, middle, end","end"
    "``ice_ic``", "``default``", "equal to internal", "``default``"
    "", "``internal``", "initial conditions set based on ice\_data\_type,conc,dist inputs", ""
@@ -282,6 +285,8 @@ grid_nml
    "``kmt_file``", "string", "name of land mask file to be read", "``unknown_kmt_file``"
    "``kmt_type``", "boxislands", "ocean/land mask set internally, complex test geometory", "file"
    "", "channel", "ocean/land mask set internally as zonal channel", ""
+   "", "channel_oneeast", "ocean/land mask set internally as single gridcell east-west zonal channel", ""
+   "", "channel_onenorth", "ocean/land mask set internally as single gridcell north-south zonal channel", ""
    "", "default", "ocean/land mask set internally, land in upper left and lower right of domain, ", ""
    "", "file", "ocean/land mask setup read from file, see kmt_file", ""
    "", "wall", "ocean/land mask set at right edge of domain", ""
@@ -398,6 +403,7 @@ thermo_nml
    "``dSdt_slow_mode``", "real", "slow drainage strength parameter m/s/K", "-1.5e-7"
    "``floediam``", "real", "effective floe diameter for lateral melt in m", "300.0"
    "``hfrazilmin``", "real", "min thickness of new frazil ice in m", "0.05"
+   "``hi_min``", "real", "minimum ice thickness in m", "0.01"
    "``kitd``", "``0``", "delta function ITD approximation", "1"
    "", "``1``", "linear remapping ITD approximation", ""
    "``ksno``", "real", "snow thermal conductivity", "0.3"
@@ -407,6 +413,7 @@ thermo_nml
    "``phi_c_slow_mode``", ":math:`0<\phi_c < 1`", "critical liquid fraction", "0.05"
    "``phi_i_mushy``", ":math:`0<\phi_i < 1`", "solid fraction at lower boundary", "0.85"
    "``Rac_rapid_mode``", "real", "critical Rayleigh number", "10.0"
+   "``Tliquidus_max``", "real", "maximum liquidus temperature of mush (C)", "0.0"
    "", "", "", ""
 
 
@@ -523,7 +530,10 @@ shortwave_nml
    "``R_pnd``", "real", "tuning parameter for ponded sea ice albedo from Delta-Eddington shortwave", "0.0"
    "``R_snw``", "real", "tuning parameter for snow (broadband albedo) from Delta-Eddington shortwave", "1.5"
    "``shortwave``", "``ccsm3``", "NCAR CCSM3 shortwave distribution method", "``ccsm3``"
-   "", "``dEdd``", "Delta-Eddington method", ""
+   "", "``dEdd``", "Delta-Eddington method (3-band)", ""
+   "", "``dEdd_snicar_ad``", "Delta-Eddington method with 5 band snow", ""
+   "``snw_ssp_table``", "``snicar``", "lookup table for `dEdd_snicar_ad`", "``test``"
+   "", "``test``", "reduced lookup table for `dEdd_snicar_ad` testing", ""
    "``sw_dtemp``", "real", "temperature difference from melt to start redistributing", "0.02"
    "``sw_frac``", "real", "fraction redistributed", "0.9"
    "``sw_redist``", "logical", "redistribute internal shortwave to surface", "``.false.``"
@@ -612,6 +622,7 @@ forcing_nml
    "", "``monthly``", "monthly forcing data", ""
    "", "``ncar``", "NCAR bulk forcing data", ""
    "", "``oned``", "column forcing data", ""
+   "``atm_data_version``","string", "date of atm data forcing file creation", "``_undef``"
    "``bgc_data_dir``", "string", "path to oceanic forcing data directory", "'unknown_bgc_data_dir'"
    "``bgc_data_type``", "``clim``", "bgc climatological data", "``default``"
    "", "``default``", "constant values defined in the code", ""
@@ -620,6 +631,9 @@ forcing_nml
    "``calc_strair``", "``.false.``", "read wind stress and speed from files", "``.true.``"
    "", "``.true.``", "calculate wind stress and speed", ""
    "``calc_Tsfc``", "logical", "calculate surface temperature", "``.true.``"
+   "``cpl_frazil``", "``external``", "frazil water/salt fluxes are handled outside of Icepack", "``fresh_ice_correction``"
+   "", "``fresh_ice_correction``", "correct fresh-ice frazil water/salt fluxes for mushy physics", ""
+   "", "``internal``", "send full frazil water/salt fluxes for mushy physics", ""
    "``default_season``", "``summer``", "forcing initial summer values", "``winter``"
    "", "``winter``", "forcing initial winter values", ""
    "``emissivity``", "real", "emissivity of snow and ice", "0.985"
@@ -674,7 +688,8 @@ forcing_nml
    "``rotate_wind``", "logical", "rotate wind from east/north to computation grid", "``.true.``"
    "``saltflux_option``", "``constant``", "computed using ice_ref_salinity", "``constant``"
    "", "``prognostic``", "computed using prognostic salinity", ""
-   "``tfrz_option``", "``linear_salt``", "linear function of salinity (ktherm=1)", "``mushy``"
+   "``tfrz_option``","``constant``", "constant ocean freezing temperature (Tocnfrz)","``mushy``" 
+   "", "``linear_salt``", "linear function of salinity (ktherm=1)",
    "", "``minus1p8``", "constant ocean freezing temperature (:math:`-1.8^{\circ} C`)", ""
    "", "``mushy``", "matches mushy-layer thermo (ktherm=2)", ""
    "``trestore``", "integer", "sst restoring time scale (days)", "90"
@@ -784,8 +799,6 @@ zbgc_nml
    "``mu_max_phaeo``", "real", "maximum growth rate phaeocystis per day", "0.851"
    "``mu_max_sp``", "real", "maximum growth rate small plankton per day", "0.851"
    "``nitratetype``", "real", "mobility type between stationary and mobile nitrate", "-1.0"
-   "``optics_file``", "string", "optics file associated with modal aerosols", "unknown_optics_file"
-   "``optics_file_fieldname``", "string", "optics file fieldname to read", "unknown_optics_fieldname"
    "``op_dep_min``", "real", "light attenuates for optical depths exceeding min", "0.1"
    "``phi_snow``", "real", "snow porosity for brine height tracer", "0.5"
    "``ratio_chl2N_diatoms``", "real", "algal chl to N in mg/mmol diatoms", "2.1"

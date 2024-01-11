@@ -5,11 +5,12 @@
 Index of primary variables and parameters 
 ==========================================
 
-This index defines many of the symbols used frequently in the CICE model
-code.  Namelist variables are partly included here but also documented
-elsewhere, see Section :ref:`tabnamelist`. All
-quantities in the code are expressed in MKS units (temperatures may take
+This index defines many (but not all) of the symbols used frequently in the CICE model
+code.  All quantities in the code are expressed in MKS units (temperatures may take
 either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
+
+Namelist variables are partly included here, but they are fully documented in 
+section :ref:`tabnamelist`. 
 
 .. csv-table:: *Alphabetical Index*
    :header: " ", " ", " "
@@ -115,6 +116,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "cosw", "cosine of the turning angle in water", "1."
    "coszen", "cosine of the zenith angle", ""
    "Cp", "proportionality constant for potential energy", "kg/m\ :math:`^2`/s\ :math:`^2`"
+   "cpl_frazil", ":math:`\bullet` type of frazil ice coupling", ""
    "cp_air", "specific heat of air", "1005.0 J/kg/K"
    "cp_ice", "specific heat of fresh ice", "2106. J/kg/K"
    "cp_ocn", "specific heat of sea water", "4218. J/kg/K"
@@ -323,6 +325,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "history_format", "history file format", ""
    "history_precision", "history output precision: 4 or 8 byte", "4"
    "hist_time_axis", "history file time axis interval location: begin, middle, end", "end"
+   "hist_suffix", "suffix to `history_file` in filename. x means no suffix", "x,x,x,x,x"
    "hm", "land/boundary mask, thickness (T-cell)", ""
    "hmix", "ocean mixed layer depth", "20. m"
    "hour", "hour of the year", ""
@@ -384,7 +387,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "kice", "thermal conductivity of fresh ice (:cite:`Bitz99`)", "2.03 W/m/deg"
    "kitd", "type of itd conversions (0 = delta function, 1 = linear remap)", "1"
    "kmt_file", "input file for land mask info", ""
-   "kmt_type", "file, default or boxislands", "file"
+   "kmt_type", "file, default, channel, wall, or boxislands", "file"
    "krdg_partic", "ridging participation function", "1"
    "krdg_redist", "ridging redistribution function", "1"
    "krgdn", "mean ridge thickness per thickness of ridging ice", ""
@@ -504,8 +507,6 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "ocn_data_type", "source of surface temperature, salinity data", ""
    "omega", "angular velocity of Earth", "7.292\ :math:`\times`\ 10\ :math:`^{-5}` rad/s"
    "opening", "rate of ice opening due to divergence and shear", "1/s"
-   "optics_file", "optics filename associated with modal aerosols", ""
-   "optics_file_fieldname", "optics file fieldname that is read", ""
    "**P**", "", ""
    "p001", "1/1000", ""
    "p01", "1/100", ""
@@ -620,7 +621,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "shcoef", "transfer coefficient for sensible heat", ""
    "shear", "strain rate II component", "1/s"
    "shlat", "southern latitude of artificial mask edge", "30\ :math:`^\circ`\ N"
-   "shortwave", "flag for shortwave parameterization (‘ccsm3’ or ‘dEdd’)", ""
+   "shortwave", "flag for shortwave parameterization (‘ccsm3’ or ‘dEdd’ or 'dEdd_snicar_ad')", ""
    "sig1(2)", "principal stress components :math:`\sigma_{n,1}`, :math:`\sigma_{n,2}` (diagnostic)", ""
    "sigP", "internal ice pressure", "N/m"
    "sil", "silicate concentration", "mmol/m\ :math:`^3`"
@@ -690,6 +691,7 @@ either Celsius or Kelvin units).  Deprecated parameters are listed at the end.
    "Timelt", "melting temperature of ice top surface", "0. C"
    "Tinz", "Internal ice temperature", "C"
    "TLAT", "latitude of cell center", "radians"
+   "Tliquidus_max", "maximum liquidus temperature of mush", "0. C"
    "TLON", "longitude of cell center", "radians"
    "tmask", "land/boundary mask, thickness (T-cell)", ""
    "tmass", "total mass of ice and snow", "kg/m\ :math:`^2`"

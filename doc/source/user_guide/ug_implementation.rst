@@ -192,7 +192,9 @@ recommend that the user choose the local domains so that the global
 domain is evenly divided, if this is not possible then the furthest east
 and/or north blocks will contain nonphysical points (“padding”). These
 points are excluded from the computation domain and have little effect
-on model performance.
+on model performance.  ``nghost`` is a hardcoded parameter in **ice_blocks.F90**.
+While the halo code has been implemented to support arbitrary sized halos,
+``nghost`` is set to 1 and has not been formally tested on larger halos.
 
 .. _fig-grid:
 
@@ -379,7 +381,7 @@ Several predefined rectangular grids are available in CICE with
 where 12, 80, 128, and 180 are the number of gridcells in each direction.
 Several predefined options also exist, set with **cice.setup --set**, to
 establish varied idealized configurations of box tests including ``box2001``, 
-``boxadv``, ``boxchan``, ``boxnodyn``, ``boxrestore``, ``boxslotcyl``, and
+``boxadv``, ``boxchan``, ``boxchan1e``, ``boxchan1n``, ``boxnodyn``, ``boxrestore``, ``boxslotcyl``, and
 ``boxopen``, ``boxclosed``, and ``boxforcee``.  See **cice.setup --help** for a current 
 list of supported settings.
 
@@ -1156,8 +1158,11 @@ io package.  The namelist variable ``history_format`` further refines the
 format approach or style for some io packages.
 
 Model output data can be written as instantaneous or average data as specified
-by the ``hist_avg`` namelist array and is customizable by stream.  The data is 
-written at the period(s) given by ``histfreq`` and
+by the ``hist_avg`` namelist array and is customizable by stream. Characters
+can be added to the ``history_filename`` to distinguish the streams. This can be changed
+by modifying ``hist_suffix`` to something other than "x".
+
+The data written at the period(s) given by ``histfreq`` and
 ``histfreq_n`` relative to a reference date specified by ``histfreq_base``.  
 The files are written to binary or netCDF files prepended by ``history_file``
 in **ice_in**. These settings for history files are set in the 
@@ -1192,33 +1197,35 @@ The history modules allow output at different frequencies. Five output
 frequencies (``1``, ``h``, ``d``, ``m``, ``y``) are available simultaneously during a run.
 The same variable can be output at different frequencies (say daily and
 monthly) via its namelist flag, `f\_` :math:`\left<{var}\right>`, which
-is now a character string corresponding to ``histfreq`` or ‘x’ for none.
-(Grid variable flags are still logicals, since they are written to all
+is a character string corresponding to ``histfreq`` or ‘x’ for none.
+(Grid variable flags are logicals, since they are written to all
 files, no matter what the frequency is.) If there are no namelist flags
 with a given ``histfreq`` value, or if an element of ``histfreq_n`` is 0, then
 no file will be written at that frequency. The output period can be
-discerned from the filenames.  All history streams will be either instantaneous
-or averaged as specified by the ``hist_avg`` namelist setting and the frequency
-will be relative to a reference date specified by ``histfreq_base``.  Also, some
+discerned from the filenames or the ``hist_suffix`` can be used.  Each history stream will be either instantaneous
+or averaged as specified by the corresponding entry in the ``hist_avg`` namelist array, and the frequency
+will be relative to a reference date specified by the corresponding entry in ``histfreq_base``.
+More information about how the frequency is
+computed is found in :ref:`timemanager`.
+Also, some
 Earth Sytem Models require the history file time axis to be centered in the averaging
 interval. The flag ``hist_time_axis`` will allow the user to chose ``begin``, ``middle``,
-or ``end`` for the time stamp. More information about how the frequency is 
-computed is found in :ref:`timemanager`.
+or ``end`` for the time stamp.
 
 For example, in the namelist:
 
 ::
 
-  histfreq = ’1’, ’h’, ’d’, ’m’, ’y’
-  histfreq_n = 1, 6, 0, 1, 1
-  histfreq_base = 'zero'
-  hist_avg = .true.,.true.,.true.,.true.,.true.
-  f_hi = ’1’
-  f_hs = ’h’
-  f_Tsfc = ’d’
-  f_aice = ’m’
-  f_meltb = ’mh’
-  f_iage = ’x’
+  histfreq   = '1', 'h', 'd', 'm', 'y'
+  histfreq_n =  1 ,  6 ,  0 ,  1 ,  1
+  histfreq_base = 'zero','zero','zero','zero','zero'
+  hist_avg      = .true.,.true.,.true.,.true.,.true.
+  f_hi = '1'
+  f_hs = 'h'
+  f_Tsfc = 'd'
+  f_aice = 'm'
+  f_meltb = 'mh'
+  f_iage = 'x'
 
 Here, ``hi`` will be written to a file on every timestep, ``hs`` will be
 written once every 6 hours, ``aice`` once a month, ``meltb`` once a month AND

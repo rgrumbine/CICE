@@ -24,13 +24,17 @@
 
       use ice_kinds_mod
       use ice_broadcast, only: broadcast_scalar, broadcast_array
-      use ice_boundary, only: ice_HaloUpdate, ice_HaloExtrapolate, &
-          primary_grid_lengths_global_ext
+      use ice_boundary, only: ice_HaloUpdate, ice_HaloExtrapolate
+      use ice_constants, only: c0, c1, c1p5, c2, c4, c20, c360, &
+          p5, p25, radius, cm_to_m, m_to_cm, &
+          field_loc_center, field_loc_NEcorner, field_loc_Nface, field_loc_Eface, &
+          field_type_scalar, field_type_vector, field_type_angle
       use ice_communicate, only: my_task, master_task
       use ice_blocks, only: block, get_block, nx_block, ny_block, nghost
       use ice_domain_size, only: nx_global, ny_global, max_blocks
       use ice_domain, only: blocks_ice, nblocks, halo_info, distrb_info, &
-          ew_boundary_type, ns_boundary_type, init_domain_distribution
+          ew_boundary_type, ns_boundary_type, init_domain_distribution, &
+          close_boundaries
       use ice_fileunits, only: nu_diag, nu_grid, nu_kmt, &
           get_fileunit, release_fileunit, flush_fileunit
       use ice_gather_scatter, only: gather_global, scatter_global
@@ -44,8 +48,9 @@
 
       implicit none
       private
-      public :: init_grid1, init_grid2, grid_average_X2Y, &
-                alloc_grid, makemask, grid_neighbor_min, grid_neighbor_max
+      public :: init_grid1, init_grid2, grid_average_X2Y, makemask, &
+                alloc_grid, dealloc_grid, &
+                grid_neighbor_min, grid_neighbor_max
 
       character (len=char_len_long), public :: &
          grid_format  , & ! file format ('bin'=binary or 'nc'=netcdf)
@@ -82,14 +87,14 @@
          dyE    , & ! height of E-cell through the middle (m)
          HTE    , & ! length of eastern edge of T-cell (m)
          HTN    , & ! length of northern edge of T-cell (m)
-         tarea  , & ! area of T-cell (m^2)
-         uarea  , & ! area of U-cell (m^2)
-         narea  , & ! area of N-cell (m^2)
-         earea  , & ! area of E-cell (m^2)
-         tarear , & ! 1/tarea
-         uarear , & ! 1/uarea
-         narear , & ! 1/narea
-         earear , & ! 1/earea
+         tarea  , & ! area of T-cell (m^2), valid in halo
+         uarea  , & ! area of U-cell (m^2), valid in halo
+         narea  , & ! area of N-cell (m^2), valid in halo
+         earea  , & ! area of E-cell (m^2), valid in halo
+         tarear , & ! 1/tarea, valid in halo
+         uarear , & ! 1/uarea, valid in halo
+         narear , & ! 1/narea, valid in halo
+         earear , & ! 1/earea, valid in halo
          tarean , & ! area of NH T-cells
          tareas , & ! area of SH T-cells
          ULON   , & ! longitude of velocity pts, NE corner of T pts (radians)
@@ -101,7 +106,7 @@
          ELON   , & ! longitude of center of east face of T pts (radians)
          ELAT   , & ! latitude of center of east face of T pts (radians)
          ANGLE  , & ! for conversions between POP grid and lat/lon
-         ANGLET , & ! ANGLE converted to T-cells
+         ANGLET , & ! ANGLE converted to T-cells, valid in halo
          bathymetry      , & ! ocean depth, for grounding keels and bergs (m)
          ocn_gridcell_frac   ! only relevant for lat-lon grids
                              ! gridcell value of [1 - (land fraction)] (T-cell)
@@ -180,7 +185,7 @@
 
       logical (kind=log_kind), public :: &
          use_bathymetry, & ! flag for reading in bathymetry_file
-         pgl_global_ext, & ! flag for init primary grid lengths (global ext.)
+         save_ghte_ghtn, & ! flag for saving global hte and htn during initialization
          scale_dxdy        ! flag to apply scale factor to vary dx/dy in rectgrid
 
       logical (kind=log_kind), dimension (:,:,:), allocatable, public :: &
@@ -288,7 +293,7 @@
          mse  (2,2,nx_block,ny_block,max_blocks), &
          msw  (2,2,nx_block,ny_block,max_blocks), &
          stat=ierr)
-      if (ierr/=0) call abort_ice(subname//'ERROR: Out of memory')
+      if (ierr/=0) call abort_ice(subname//'ERROR: Out of memory1')
 
       if (grid_ice == 'CD' .or. grid_ice == 'C') then
          allocate( &
@@ -297,18 +302,43 @@
             ratiodxNr(nx_block,ny_block,max_blocks), &
             ratiodyEr(nx_block,ny_block,max_blocks), &
             stat=ierr)
-         if (ierr/=0) call abort_ice(subname//'ERROR: Out of memory')
+         if (ierr/=0) call abort_ice(subname//'ERROR: Out of memory2')
       endif
 
-      if (pgl_global_ext) then
-         allocate( &
-            G_HTE(nx_global+2*nghost, ny_global+2*nghost), & ! length of eastern edge of T-cell (global ext.)
-            G_HTN(nx_global+2*nghost, ny_global+2*nghost), & ! length of northern edge of T-cell (global ext.)
-            stat=ierr)
-         if (ierr/=0) call abort_ice(subname//'ERROR: Out of memory')
+      if (save_ghte_ghtn) then
+         if (my_task == master_task) then
+            allocate( &
+               G_HTE(nx_global+2*nghost, ny_global+2*nghost), & ! length of eastern edge of T-cell (global ext.)
+               G_HTN(nx_global+2*nghost, ny_global+2*nghost), & ! length of northern edge of T-cell (global ext.)
+               stat=ierr)
+         else
+            allocate( &
+               G_HTE(1,1), & ! needed for debug checks
+               G_HTN(1,1), & ! never used in code
+               stat=ierr)
+         endif
+         if (ierr/=0) call abort_ice(subname//'ERROR: Out of memory3')
       endif
 
       end subroutine alloc_grid
+
+!=======================================================================
+
+!
+! DeAllocate space for variables no longer needed after initialization
+!
+      subroutine dealloc_grid
+
+      integer (int_kind) :: ierr
+
+      character(len=*), parameter :: subname = '(dealloc_grid)'
+
+      if (save_ghte_ghtn) then
+         deallocate(G_HTE, G_HTN, stat=ierr)
+         if (ierr/=0) call abort_ice(subname//'ERROR: Dealloc error1')
+      endif
+
+      end subroutine dealloc_grid
 
 !=======================================================================
 
@@ -318,10 +348,6 @@
 ! authors: William Lipscomb and Phil Jones, LANL
 
       subroutine init_grid1
-
-      use ice_blocks, only: nx_block, ny_block
-      use ice_broadcast, only: broadcast_array
-      use ice_constants, only: c1
 
       integer (kind=int_kind) :: &
          fid_grid, &     ! file id for netCDF grid file
@@ -445,11 +471,6 @@
 
       subroutine init_grid2
 
-      use ice_blocks, only: get_block, block, nx_block, ny_block
-      use ice_constants, only: c0, c1, c2, p5, p25, c1p5, &
-          field_loc_center, field_loc_NEcorner, field_loc_Nface, field_loc_Eface, &
-          field_type_scalar, field_type_vector, field_type_angle
-      use ice_domain_size, only: max_blocks
 #if defined (_OPENMP)
       use OMP_LIB
 #endif
@@ -635,11 +656,23 @@
       call ice_HaloUpdate (uarea,              halo_info, &
                            field_loc_NEcorner, field_type_scalar, &
                            fillValue=c1,       tripoleOnly=.true.)
+      call ice_HaloUpdate (narea,              halo_info, &
+                           field_loc_Nface,    field_type_scalar, &
+                           fillValue=c1,       tripoleOnly=.true.)
+      call ice_HaloUpdate (earea,              halo_info, &
+                           field_loc_Eface,    field_type_scalar, &
+                           fillValue=c1,       tripoleOnly=.true.)
       call ice_HaloUpdate (tarear,             halo_info, &
                            field_loc_center,   field_type_scalar, &
                            fillValue=c1,       tripoleOnly=.true.)
       call ice_HaloUpdate (uarear,             halo_info, &
                            field_loc_NEcorner, field_type_scalar, &
+                           fillValue=c1,       tripoleOnly=.true.)
+      call ice_HaloUpdate (narear,             halo_info, &
+                           field_loc_Nface,    field_type_scalar, &
+                           fillValue=c1,       tripoleOnly=.true.)
+      call ice_HaloUpdate (earear,             halo_info, &
+                           field_loc_Eface,    field_type_scalar, &
                            fillValue=c1,       tripoleOnly=.true.)
 
       call ice_timer_stop(timer_bound)
@@ -663,36 +696,37 @@
       if (trim(grid_type) == 'cpom_grid') then
          ANGLET(:,:,:) = ANGLE(:,:,:)
       else if (.not. (l_readCenter)) then
-          ANGLET = c0
+         ANGLET = c0
 
-      !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block, &
-      !$OMP                     angle_0,angle_w,angle_s,angle_sw)
-      do iblk = 1, nblocks
-         this_block = get_block(blocks_ice(iblk),iblk)
-         ilo = this_block%ilo
-         ihi = this_block%ihi
-         jlo = this_block%jlo
-         jhi = this_block%jhi
+         !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block, &
+         !$OMP                     angle_0,angle_w,angle_s,angle_sw)
+         do iblk = 1, nblocks
+            this_block = get_block(blocks_ice(iblk),iblk)
+            ilo = this_block%ilo
+            ihi = this_block%ihi
+            jlo = this_block%jlo
+            jhi = this_block%jhi
 
-         do j = jlo, jhi
-         do i = ilo, ihi
-            angle_0  = ANGLE(i  ,j  ,iblk) !   w----0
-            angle_w  = ANGLE(i-1,j  ,iblk) !   |    |
-            angle_s  = ANGLE(i,  j-1,iblk) !   |    |
-            angle_sw = ANGLE(i-1,j-1,iblk) !   sw---s
-            ANGLET(i,j,iblk) = atan2(p25*(sin(angle_0)+ &
-                                          sin(angle_w)+ &
-                                          sin(angle_s)+ &
-                                          sin(angle_sw)),&
-                                     p25*(cos(angle_0)+ &
-                                          cos(angle_w)+ &
-                                          cos(angle_s)+ &
-                                          cos(angle_sw)))
+            do j = jlo, jhi
+            do i = ilo, ihi
+               angle_0  = ANGLE(i  ,j  ,iblk) !   w----0
+               angle_w  = ANGLE(i-1,j  ,iblk) !   |    |
+               angle_s  = ANGLE(i,  j-1,iblk) !   |    |
+               angle_sw = ANGLE(i-1,j-1,iblk) !   sw---s
+               ANGLET(i,j,iblk) = atan2(p25*(sin(angle_0)+ &
+                                             sin(angle_w)+ &
+                                             sin(angle_s)+ &
+                                             sin(angle_sw)),&
+                                        p25*(cos(angle_0)+ &
+                                             cos(angle_w)+ &
+                                             cos(angle_s)+ &
+                                             cos(angle_sw)))
+            enddo
+            enddo
          enddo
-         enddo
-      enddo
-      !$OMP END PARALLEL DO
+         !$OMP END PARALLEL DO
       endif ! cpom_grid
+
       if (trim(grid_type) == 'regional' .and. &
           (.not. (l_readCenter))) then
          ! for W boundary extrapolate from interior
@@ -722,8 +756,10 @@
 
       call makemask          ! velocity mask, hemisphere masks
       if (.not. (l_readCenter)) then
-         call Tlatlon           ! get lat, lon on the T grid
+         call Tlatlon        ! get lat, lon on the T grid
       endif
+      call NElatlon          ! get lat, lon on the N, E grid
+
       !-----------------------------------------------------------------
       ! bathymetry
       !-----------------------------------------------------------------
@@ -784,12 +820,6 @@
 ! author: Elizabeth C. Hunke, LANL
 
       subroutine popgrid
-
-      use ice_blocks, only: nx_block, ny_block
-      use ice_constants, only: c0, c1, p5, &
-          field_loc_center, field_loc_NEcorner, &
-          field_type_scalar, field_type_angle
-      use ice_domain_size, only: max_blocks
 
       integer (kind=int_kind) :: &
          i, j, iblk, &
@@ -904,11 +934,6 @@
 
       subroutine popgrid_nc
 
-      use ice_blocks, only: nx_block, ny_block
-      use ice_constants, only: c0, c1, &
-          field_loc_center, field_loc_NEcorner, &
-          field_type_scalar, field_type_angle
-      use ice_domain_size, only: max_blocks
 #ifdef USE_NETCDF
       use netcdf
 #endif
@@ -1075,11 +1100,7 @@
 
       subroutine latlongrid
 
-!     use ice_boundary
-      use ice_domain_size
       use ice_scam, only : scmlat, scmlon, single_column
-      use ice_constants, only: c0, c1, p5, p25, &
-          field_loc_center, field_type_scalar, radius
 #ifdef USE_NETCDF
       use netcdf
 #endif
@@ -1359,10 +1380,6 @@
 
       subroutine rectgrid
 
-      use ice_constants, only: c0, c1, c2, radius, cm_to_m, &
-          field_loc_center, field_loc_NEcorner, field_type_scalar
-      use ice_domain, only: close_boundaries
-
       integer (kind=int_kind) :: &
          i, j, &
          imid, jmid
@@ -1477,6 +1494,22 @@
             enddo
             enddo
 
+         elseif (trim(kmt_type) == 'channel_oneeast') then
+
+            do j = ny_global/2,ny_global/2    ! one channel wide
+            do i = 1,nx_global       ! open sides
+               work_g1(i,j) = c1     ! NOTE nx_global > 5
+            enddo
+            enddo
+
+         elseif (trim(kmt_type) == 'channel_onenorth') then
+
+            do j = 1,ny_global       ! open sides
+            do i = nx_global/2,nx_global/2    ! one channel wide
+               work_g1(i,j) = c1     ! NOTE nx_global > 5
+            enddo
+            enddo
+
          elseif (trim(kmt_type) == 'wall') then
 
             do j = 1,ny_global       ! open except
@@ -1542,8 +1575,6 @@
 
         ! generate a variable spaced rectangluar grid.
         ! extend spacing from center of grid outward.
-        use ice_constants, only: c0, c1, c2, radius, cm_to_m, &
-             field_loc_center, field_loc_NEcorner, field_type_scalar
 
         integer (kind=int_kind) :: &
              i, j, iblk, &
@@ -1707,8 +1738,6 @@
 
       subroutine grid_boxislands_kmt (work)
 
-      use ice_constants, only: c0, c1, c20
-
       real (kind=dbl_kind), dimension(:,:), intent(inout) :: work
 
       integer (kind=int_kind) :: &
@@ -1842,11 +1871,6 @@
 
       subroutine cpomgrid
 
-      use ice_blocks, only: nx_block, ny_block
-      use ice_constants, only: c0, c1, m_to_cm, &
-          field_loc_NEcorner, field_type_scalar
-      use ice_domain_size, only: max_blocks
-
       integer (kind=int_kind) :: &
            i, j, iblk,           &
            ilo,ihi,jlo,jhi      ! beginning and end of physical domain
@@ -1933,8 +1957,8 @@
          close (nu_kmt)
       endif
 
-      write(nu_diag,*) "min/max HTN: ", minval(HTN), maxval(HTN)
-      write(nu_diag,*) "min/max HTE: ", minval(HTE), maxval(HTE)
+      write(nu_diag,*) subname," min/max HTN: ", minval(HTN), maxval(HTN)
+      write(nu_diag,*) subname," min/max HTE: ", minval(HTE), maxval(HTE)
 
       end subroutine cpomgrid
 
@@ -1947,10 +1971,6 @@
 ! author: Elizabeth C. Hunke, LANL
 
       subroutine primary_grid_lengths_HTN(work_g)
-
-      use ice_constants, only: p25, p5, c2, cm_to_m, &
-          field_loc_center, field_loc_NEcorner, &
-          field_loc_Nface, field_type_scalar
 
       real (kind=dbl_kind), dimension(:,:) :: work_g ! global array holding HTN
 
@@ -1987,10 +2007,14 @@
             work_g2(i,j) = p5*(work_g(i,j) + work_g(ip1,j))    ! dxU
          enddo
          enddo
-      endif
-      if (pgl_global_ext) then
-         call primary_grid_lengths_global_ext( &
-            G_HTN, work_g, ew_boundary_type, ns_boundary_type)
+         if (save_ghte_ghtn) then
+            do j = 1, ny_global
+            do i = 1,nx_global
+               G_HTN(i+nghost,j+nghost) = work_g(i,j)
+            enddo
+            enddo
+            call global_ext_halo(G_HTN)
+         endif
       endif
       call scatter_global(HTN, work_g, master_task, distrb_info, &
                           field_loc_Nface, field_type_scalar)
@@ -2053,10 +2077,6 @@
 
       subroutine primary_grid_lengths_HTE(work_g)
 
-      use ice_constants, only: p25, p5, c2, cm_to_m, &
-          field_loc_center, field_loc_NEcorner, &
-          field_loc_Eface, field_type_scalar
-
       real (kind=dbl_kind), dimension(:,:) :: work_g ! global array holding HTE
 
       ! local variables
@@ -2095,10 +2115,14 @@
                work_g2(i,ny_global) = c2*work_g(i,ny_global-1) - work_g(i,ny_global-2)  ! dyU
             enddo
          endif
-      endif
-      if (pgl_global_ext) then
-         call primary_grid_lengths_global_ext( &
-            G_HTE, work_g, ew_boundary_type, ns_boundary_type)
+         if (save_ghte_ghtn) then
+            do j = 1, ny_global
+            do i = 1, nx_global
+               G_HTE(i+nghost,j+nghost) = work_g(i,j)
+            enddo
+            enddo
+            call global_ext_halo(G_HTE)
+         endif
       endif
       call scatter_global(HTE, work_g, master_task, distrb_info, &
                           field_loc_Eface, field_type_scalar)
@@ -2155,6 +2179,48 @@
 
 !=======================================================================
 
+!  This subroutine fills ghost cells in global extended grid
+
+      subroutine global_ext_halo(array)
+
+      real (kind=dbl_kind), dimension(:,:), intent(inout) :: &
+         array   ! extended global grid size nx+2*nghost, ny+2*nghost
+                 ! nghost+1:nghost+nx_global and nghost+1:nghost+ny_global filled on entry
+
+      integer (kind=int_kind) :: n
+
+      character(len=*), parameter :: subname = '(global_ext_halo)'
+
+      do n = 1,nghost
+         if (ns_boundary_type =='cyclic') then
+            array(:,n)                  = array(:,ny_global+n)
+            array(:,ny_global+nghost+n) = array(:,nghost+n)
+         elseif (ns_boundary_type == 'open') then
+            array(:,n)                  = array(:,nghost+1)
+            array(:,ny_global+nghost+n) = array(:,ny_global+nghost)
+         else
+            array(:,n)                  = c0
+            array(:,ny_global+nghost+n) = c0
+         endif
+      enddo
+
+      do n = 1,nghost
+         if (ew_boundary_type =='cyclic') then
+            array(n                 ,:) = array(nx_global+n,:)
+            array(nx_global+nghost+n,:) = array(nghost+n   ,:)
+         elseif (ew_boundary_type == 'open') then
+            array(n                 ,:) = array(nghost+1        ,:)
+            array(nx_global+nghost+n,:) = array(nx_global+nghost,:)
+         else
+            array(n                 ,:) = c0
+            array(nx_global+nghost+n,:) = c0
+         endif
+      enddo
+
+      end subroutine global_ext_halo
+
+!=======================================================================
+
 ! Sets the boundary values for the T cell land mask (hm) and
 ! makes the logical land masks for T and U cells (tmask, umask)
 ! and N and E cells (nmask, emask).
@@ -2163,10 +2229,6 @@
 ! author: Elizabeth C. Hunke, LANL
 
       subroutine makemask
-
-      use ice_constants, only: c0, p5, c1p5, &
-          field_loc_center, field_loc_NEcorner, field_type_scalar, &
-          field_loc_Nface, field_loc_Eface
 
       integer (kind=int_kind) :: &
          i, j, iblk, &
@@ -2318,10 +2380,6 @@
 
       subroutine Tlatlon
 
-      use ice_constants, only: c0, c1, c1p5, c2, c4, p5, &
-          field_loc_center, field_loc_Nface, field_loc_Eface, &
-          field_type_scalar
-
       integer (kind=int_kind) :: &
            i, j, iblk       , & ! horizontal indices
            ilo,ihi,jlo,jhi      ! beginning and end of physical domain
@@ -2335,6 +2393,10 @@
 
       character(len=*), parameter :: subname = '(Tlatlon)'
 
+      if (my_task==master_task) then
+         write(nu_diag,*) subname,' called'
+      endif
+
       call icepack_query_parameters(rad_to_deg_out=rad_to_deg)
       call icepack_warnings_flush(nu_diag)
       if (icepack_warnings_aborted()) call abort_ice(error_message=subname, &
@@ -2342,10 +2404,6 @@
 
       TLAT(:,:,:) = c0
       TLON(:,:,:) = c0
-      NLAT(:,:,:) = c0
-      NLON(:,:,:) = c0
-      ELAT(:,:,:) = c0
-      ELON(:,:,:) = c0
 
       !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block, &
       !$OMP                     x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4, &
@@ -2398,14 +2456,86 @@
             ! TLAT in radians North
             TLAT(i,j,iblk) = asin(tz)
 
-! these two loops should be merged to save cos/sin calculations,
-! but atan2 is not bit-for-bit. This suggests the result for atan2 depends on
-! the prior atan2 call ??? not sure what's going on.
-#if (1 == 1)
          enddo                  ! i
          enddo                  ! j
       enddo                     ! iblk
       !$OMP END PARALLEL DO
+
+      if (trim(grid_type) == 'regional') then
+         ! for W boundary extrapolate from interior
+         !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block)
+         do iblk = 1, nblocks
+            this_block = get_block(blocks_ice(iblk),iblk)
+            ilo = this_block%ilo
+            ihi = this_block%ihi
+            jlo = this_block%jlo
+            jhi = this_block%jhi
+
+            i = ilo
+            if (this_block%i_glob(i) == 1) then
+               do j = jlo, jhi
+                  TLON(i,j,iblk) = c2*TLON(i+1,j,iblk) - &
+                                      TLON(i+2,j,iblk)
+                  TLAT(i,j,iblk) = c2*TLAT(i+1,j,iblk) - &
+                                      TLAT(i+2,j,iblk)
+               enddo
+            endif
+         enddo
+         !$OMP END PARALLEL DO
+      endif   ! regional
+
+      call ice_timer_start(timer_bound)
+      call ice_HaloUpdate (TLON,             halo_info, &
+                           field_loc_center, field_type_scalar, &
+                           fillValue=c1)
+      call ice_HaloUpdate (TLAT,             halo_info, &
+                           field_loc_center, field_type_scalar, &
+                           fillValue=c1)
+      call ice_HaloExtrapolate(TLON, distrb_info, &
+                               ew_boundary_type, ns_boundary_type)
+      call ice_HaloExtrapolate(TLAT, distrb_info, &
+                               ew_boundary_type, ns_boundary_type)
+
+      end subroutine Tlatlon
+
+!=======================================================================
+
+! Initializes latitude and longitude on N, E grid
+!
+! author: T. Craig from Tlatlon
+
+      subroutine NElatlon
+
+      use ice_constants, only: c0, c1, c1p5, c2, c4, p5, &
+          field_loc_center, field_loc_Nface, field_loc_Eface, &
+          field_type_scalar
+
+      integer (kind=int_kind) :: &
+           i, j, iblk       , & ! horizontal indices
+           ilo,ihi,jlo,jhi      ! beginning and end of physical domain
+
+      real (kind=dbl_kind) :: &
+           z1,x1,y1,z2,x2,y2,z3,x3,y3,z4,x4,y4,tx,ty,tz,da, &
+           rad_to_deg
+
+      type (block) :: &
+           this_block           ! block information for current block
+
+      character(len=*), parameter :: subname = '(NElatlon)'
+
+      if (my_task==master_task) then
+         write(nu_diag,*) subname,' called'
+      endif
+
+      call icepack_query_parameters(rad_to_deg_out=rad_to_deg)
+      call icepack_warnings_flush(nu_diag)
+      if (icepack_warnings_aborted()) call abort_ice(error_message=subname, &
+         file=__FILE__, line=__LINE__)
+
+      NLAT(:,:,:) = c0
+      NLON(:,:,:) = c0
+      ELAT(:,:,:) = c0
+      ELON(:,:,:) = c0
 
       !$OMP PARALLEL DO PRIVATE(iblk,i,j,ilo,ihi,jlo,jhi,this_block, &
       !$OMP                     x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4, &
@@ -2439,7 +2569,7 @@
             x4 = cos(ULON(i,j,iblk))*z4
             y4 = sin(ULON(i,j,iblk))*z4
             z4 = sin(ULAT(i,j,iblk))
-#endif
+
             ! ---------
             ! NLON/NLAT 2 pt computation (pts 3, 4)
             ! ---------
@@ -2494,10 +2624,6 @@
             i = ilo
             if (this_block%i_glob(i) == 1) then
                do j = jlo, jhi
-                  TLON(i,j,iblk) = c2*TLON(i+1,j,iblk) - &
-                                      TLON(i+2,j,iblk)
-                  TLAT(i,j,iblk) = c2*TLAT(i+1,j,iblk) - &
-                                      TLAT(i+2,j,iblk)
                   NLON(i,j,iblk) = c1p5*TLON(i+1,j,iblk) - &
                                      p5*TLON(i+2,j,iblk)
                   NLAT(i,j,iblk) = c1p5*TLAT(i+1,j,iblk) - &
@@ -2509,12 +2635,6 @@
       endif   ! regional
 
       call ice_timer_start(timer_bound)
-      call ice_HaloUpdate (TLON,             halo_info, &
-                           field_loc_center, field_type_scalar, &
-                           fillValue=c1)
-      call ice_HaloUpdate (TLAT,             halo_info, &
-                           field_loc_center, field_type_scalar, &
-                           fillValue=c1)
       call ice_HaloUpdate (NLON,             halo_info, &
                            field_loc_Nface,  field_type_scalar, &
                            fillValue=c1)
@@ -2527,10 +2647,6 @@
       call ice_HaloUpdate (ELAT,             halo_info, &
                            field_loc_Eface,  field_type_scalar, &
                            fillValue=c1)
-      call ice_HaloExtrapolate(TLON, distrb_info, &
-                               ew_boundary_type, ns_boundary_type)
-      call ice_HaloExtrapolate(TLAT, distrb_info, &
-                               ew_boundary_type, ns_boundary_type)
       call ice_HaloExtrapolate(NLON, distrb_info, &
                                ew_boundary_type, ns_boundary_type)
       call ice_HaloExtrapolate(NLAT, distrb_info, &
@@ -2553,12 +2669,10 @@
 
       if (my_task==master_task) then
          write(nu_diag,*) ' '
-!         if (nx_block > 5+2*nghost .and. ny_block > 5+2*nghost) then
-         write(nu_diag,*) 'min/max ULON:', y1*rad_to_deg, y2*rad_to_deg
-         write(nu_diag,*) 'min/max ULAT:', y3*rad_to_deg, y4*rad_to_deg
-!         endif
-         write(nu_diag,*) 'min/max TLON:', x1*rad_to_deg, x2*rad_to_deg
-         write(nu_diag,*) 'min/max TLAT:', x3*rad_to_deg, x4*rad_to_deg
+         write(nu_diag,*) subname,' min/max ULON:', y1*rad_to_deg, y2*rad_to_deg
+         write(nu_diag,*) subname,' min/max ULAT:', y3*rad_to_deg, y4*rad_to_deg
+         write(nu_diag,*) subname,' min/max TLON:', x1*rad_to_deg, x2*rad_to_deg
+         write(nu_diag,*) subname,' min/max TLAT:', x3*rad_to_deg, x4*rad_to_deg
       endif                     ! my_task
 
       x1 = global_minval(NLON, distrb_info, nmask)
@@ -2573,15 +2687,13 @@
 
       if (my_task==master_task) then
          write(nu_diag,*) ' '
-!         if (nx_block > 5+2*nghost .and. ny_block > 5+2*nghost) then
-         write(nu_diag,*) 'min/max NLON:', x1*rad_to_deg, x2*rad_to_deg
-         write(nu_diag,*) 'min/max NLAT:', x3*rad_to_deg, x4*rad_to_deg
-         write(nu_diag,*) 'min/max ELON:', y1*rad_to_deg, y2*rad_to_deg
-         write(nu_diag,*) 'min/max ELAT:', y3*rad_to_deg, y4*rad_to_deg
-!         endif
+         write(nu_diag,*) subname,' min/max NLON:', x1*rad_to_deg, x2*rad_to_deg
+         write(nu_diag,*) subname,' min/max NLAT:', x3*rad_to_deg, x4*rad_to_deg
+         write(nu_diag,*) subname,' min/max ELON:', y1*rad_to_deg, y2*rad_to_deg
+         write(nu_diag,*) subname,' min/max ELAT:', y3*rad_to_deg, y4*rad_to_deg
       endif                     ! my_task
 
-      end subroutine Tlatlon
+      end subroutine NElatlon
 
 !=======================================================================
 
@@ -2940,8 +3052,6 @@
 
       subroutine grid_average_X2YS(dir,work1,wght1,mask1,work2)
 
-      use ice_constants, only: c0
-
       character(len=*) , intent(in) :: &
          dir
 
@@ -3171,8 +3281,6 @@
 
       subroutine grid_average_X2YA(dir,work1,wght1,work2)
 
-      use ice_constants, only: c0
-
       character(len=*) , intent(in) :: &
          dir
 
@@ -3401,8 +3509,6 @@
 
       subroutine grid_average_X2YF(dir,work1,wght1,work2,wght2)
 
-      use ice_constants, only: c0, p25, p5
-
       character(len=*) , intent(in) :: &
          dir
 
@@ -3604,8 +3710,6 @@
 ! author: T. Craig
 
       subroutine grid_average_X2Y_2(dir,work1a,wght1a,mask1a,work1b,wght1b,mask1b,work2)
-
-      use ice_constants, only: c0
 
       character(len=*) , intent(in) :: &
          dir
@@ -3817,11 +3921,6 @@
 
       subroutine gridbox_corners
 
-      use ice_blocks, only: nx_block, ny_block
-      use ice_constants, only: c0,  c2, c360, &
-          field_loc_NEcorner, field_type_scalar
-      use ice_domain_size, only: max_blocks
-
       integer (kind=int_kind) :: &
           i,j,iblk,icorner,& ! index counters
           ilo,ihi,jlo,jhi    ! beginning and end of physical domain
@@ -4012,11 +4111,6 @@
 !
 
       subroutine gridbox_edges
-
-      use ice_blocks, only: nx_block, ny_block
-      use ice_constants, only: c0,  c2, c360, &
-          field_loc_NEcorner, field_type_scalar
-      use ice_domain_size, only: max_blocks
 
       integer (kind=int_kind) :: &
           i,j,iblk,icorner,& ! index counters
@@ -4313,11 +4407,6 @@
 
       subroutine gridbox_verts(work_g,vbounds)
 
-      use ice_blocks, only: nx_block, ny_block
-      use ice_constants, only: c0, c2, &
-          field_loc_NEcorner, field_type_scalar
-      use ice_domain_size, only: max_blocks
-
       real (kind=dbl_kind), dimension(:,:), intent(in) :: &
           work_g
 
@@ -4431,8 +4520,6 @@
 ! should be read from a file instead (see subroutine read_seabedstress_bathy)
 
       subroutine get_bathymetry
-
-      use ice_constants, only: c0
 
       integer (kind=int_kind) :: &
          i, j, k, iblk      ! loop indices
@@ -4625,7 +4712,6 @@
 
       ! use module
       use ice_read_write
-      use ice_constants, only: field_loc_center, field_type_scalar
 
       ! local variables
       integer (kind=int_kind) :: &
@@ -4649,7 +4735,7 @@
       fieldname='Bathymetry'
 
       if (my_task == master_task) then
-         write(nu_diag,*) 'reading ',TRIM(fieldname)
+         write(nu_diag,*) subname,' reading ',TRIM(fieldname)
          call icepack_warnings_flush(nu_diag)
       endif
       call ice_read_nc(fid_init,1,fieldname,bathymetry,diag, &
@@ -4659,7 +4745,7 @@
       call ice_close_nc(fid_init)
 
       if (my_task == master_task) then
-         write(nu_diag,*) 'closing file ',TRIM(bathymetry_file)
+         write(nu_diag,*) subname,' closing file ',TRIM(bathymetry_file)
          call icepack_warnings_flush(nu_diag)
       endif
 

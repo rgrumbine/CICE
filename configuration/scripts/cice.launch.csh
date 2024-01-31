@@ -243,7 +243,7 @@ EOFR
 #=======
 else if (${ICE_MACHCOMP} =~ wcoss2*) then
 cat >> ${jobfile} << EOFR
-srun -n ${ntasks} -c ${nthrds} ./cice >&! \$ICE_RUNLOG_FILE
+mpirun -n ${ntasks} -c ${nthrds} ./cice >&! \$ICE_RUNLOG_FILE
 EOFR
 
 #=======

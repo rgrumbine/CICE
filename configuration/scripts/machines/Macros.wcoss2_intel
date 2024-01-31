@@ -46,7 +46,7 @@ SLIBS   := -L$(LIB_NETCDF) -lnetcdf -lnetcdff
 
 ifeq ($(ICE_THREADED), true) 
    LDFLAGS += -qopenmp 
-   CFLAGS += -qopenmp 
+   CFLAGS += -fopenmp 
    FFLAGS += -qopenmp 
 endif
 

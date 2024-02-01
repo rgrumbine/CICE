@@ -347,10 +347,9 @@ cat >> ${jobfile} << EOFB
 #PBS -o ${ICE_CASENAME}
 #PBS -j oe 
 #PBS -A ${acct}
+#PBS -q dev
 #PBS -l walltime=${batchtime}
 #PBS -l select=${nnodes}:ncpus=${corespernode}:mpiprocs=${taskpernodelimit}:ompthreads=${nthrds}
-# #PBS --nodes=${nnodes}
-# #PBS --ntasks-per-node=${taskpernodelimit}
 # #SBATCH --cpus-per-task=${nthrds}
 # #SBATCH --partition=hera
 # #SBATCH --qos=${queue}

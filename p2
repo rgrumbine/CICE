@@ -1,0 +1,114 @@
+# Note: semi-colon separated here because , is often used in the range/list description
+
+# 2 cases (.true., .false., 2 numbers, 2 names)
+    ssh_stress      ; 'geostrophic'; 'geostrophic', 'coupled'
+    evp_algorithm   ; 'standard_2d'; 'standard_2d', 'shared_mem_1d'
+    frzpnd          ; 'hlid'       ; 'hlid', 'cesm'
+    conduct         ; 'bubbly'     ; 'bubbly', 'MU71'
+    capping_method  ; 'max'        ; 'max', 'min'
+    advection       ; 'remap'      ; 'remap', 'upwind'
+    krdg_partic     ; 1            ; 0,1
+    krdg_redist     ; 1            ; 0,1
+    visc_method     ; 'avg_zeta'   ; 'avg_strength', 'avg_zeta'
+    albedo_type     ; 'ccsm3'      ; 'ccsm3', 'constant'
+    algo_nonlin     ; 'picard'     ; 'picard', 'anderson'
+    snw_ssp_table   ; 'test'       ; 'test', 'snicar'
+    kridge          ; 1            ; -1, 1
+    ktransport      ; 1            ; -1, 1
+    kitd            ; 1            ; 0, 1
+    use_mean_vrel   ; .true.       ; .true., .false.
+    seabed_stress   ; .false.      ; .true., .false.
+    sw_redist       ; .false.      ; .true., .false.
+    snwgrain        ; .false.      ; .true., .false.
+    calc_dragio     ; .false.      ; .true., .false.
+    formdrag        ; .false.      ; .true., .false.
+    calc_Tsfc       ; .true.       ; .true., .false.
+    calc_strair     ; .true.       ; .true., .false.
+    highfreq        ; .false.      ; .true., .false.
+    update_ocn_f    ; .false.      ; .true., .false.
+    l_mpond_fresh   ; .false.      ; .true., .false.
+    rotate_wind     ; .true.       ; .true., .false.
+    oceanmixed_ice  ; .true.       ; .true., .false.
+    use_smliq_pnd   ; .false.      ; .true., .false.
+    revised_evp     ; .false.      ; .true., .false.
+    seabed_stress_method ; 'LKD'   ; 'LKD', 'probabilistic'
+    fe_data_type    ; 'default'    ; 'default, 'climatology'
+    saltflux_option ; 'constant'   ; 'constant', 'prognostic'
+    default_season  ; 'winter'     ; 'winter', 'summer'
+
+# 3 cases
+    shortwave         ; 'dEdd'       ; 'ccsm3', 'dEdd', 'dEdd_snicar_ad'
+    precond           ; 'pgmres'     ; 'diag', 'ident', 'pgmres'
+    ktherm            ; 2            ; -1, 1, 2
+    atmbndy           ; 'similarity' ; 'similarity', 'constant', 'mixed'
+    snw_aging_table   ; 'test'       ; 'file', 'snicar', 'test'
+
+# 4 or more:
+    kdyn            ; 1            ; 1, 2, 3, -1
+    tfrz_option     ; 'mushy'      ; 'mushy', 'minus1p8', 'linear_salt', 'constant'
+    snwredist       ; 'none'       ; 'bulk', 'ITD', 'ITDrdg', 'none'
+
+
+# Arithmetic range
+    a_rapid_mode      ;  0.5e-3      ; A 0.1,5
+    aspect_rapid_mode ; 1.0          ; A 0.1,10
+    albsnowi          ; 0.70         ; A 0.3,0.9
+    albsnowv          ; 0.98         ; A 0.4,0.99
+    Cstar             ; 20           ; A 2,200
+    atmiter_conv      ; 0.0e0        ; A 0,1
+    phi_c_slow_mode   ; 0.05         ; A 0,1
+    Rac_rapid_mode    ; 10.0         ; A 1,100
+    dT_mlt            ;  1.5         ; A 0.1,10
+    rhosnew           ;  100.0       ; A 50,300
+    rhosmax           ;  450.0       ; A 100,917
+    rhosmin           ;  100.0       ; A 50,300
+    floediam          ; 300.0e0      ; A 30,10000
+    elasticDamp       ; 0.36e0       ; A 0,1
+    sw_frac           ; 0.9e0        ; A 0.1,0.99
+    maxits_nonlin     ; 10           ; A 5,40
+    rfracmax          ; 1.           ; A 0,1
+    threshold_hw      ; 30.          ; A 5,50
+    Tliquidus_max     ; -0.1e0       ; A 0,-2
+    rfracmin          ; 0.15         ; A 0,1
+    hi_min            ; 0.01e0       ; A 0.001,0.5
+    hfrazilmin        ; 0.05e0       ; A 0.001,0.5
+    natmiter          ; 5            ; A 1,10
+    ndte              ; 240          ; A 20,480
+    e_plasticpot      ; 2.           ; A 1,20
+    Cf                ; 17.          ; A 2,100
+    ice_ref_salinity  ; 4.0          ; A 1,15
+    trestore          ;  90          ; A 5,540
+    hs0               ; 0.           ; A 0,0.1
+    emissivity        ; 0.985        ; A 0.95,0.999
+    phi_i_mushy       ; 0.85         ; A 0,1
+    kstrength         ; 1            ; A 0,1
+    ksno              ; 0.3e0        ; A 0.1,1
+    albicei           ; 0.36         ; A 0.2,0.8
+    albicev           ; 0.78         ; A 0.4,0.9
+    ahmax             ; 0.3          ; A 0.1,3.0
+    e_yieldcurve      ; 2.           ; A 1,20
+
+
+# Logarithmic range
+    deltaminEVP     ; 1e-11        ; L 0.1,10
+    deltaminVP      ; 2e-9         ; L 0.1,10
+    ustar_min       ; 0.0005       ; L 0.1,10
+    windmin         ;   10.0       ; L 0.1,10
+    brlx            ; 300.0        ; L 0.1,10
+    hp1             ; 0.01         ; L 0.1,10
+    pndaspect       ; 0.8          ; L 0.1,10
+    dSdt_slow_mode  ; -5.0e-8      ; L 0.1,10
+    mu_rdg          ; 3            ; L 0.1,10
+    snwlvlfac       ; 0.3          ; L 0.1,10
+    iceruf_ocn      ; 0.03         ; L 0.1,10
+    Pstar           ; 2.75e4       ; L 0.01,100
+    iceruf          ; 0.0005       ; L 0.1,10
+    rsnw_mlt        ; 1500.        ; L 0.1,10
+    kalg            ; 0.6          ; L 0.1,10
+    rsnw_tmax       ; 1500.0       ; L 0.1,10
+    rsnw_fall       ;  100.0       ; L 0.1,10
+    hs1             ; 0.03         ; L 0.1,10
+    arlx            ; 300.0        ; L 0.1,10
+    dpscale         ; 1.e-3        ; L 0.1,10
+    drhosdwind      ;   27.3       ; L 0.1,10
+

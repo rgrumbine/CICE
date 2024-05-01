@@ -32,7 +32,7 @@
     use_smliq_pnd   ; .false.      ; .true., .false.
     revised_evp     ; .false.      ; .true., .false.
     seabed_stress_method ; 'LKD'   ; 'LKD', 'probabilistic'
-    fe_data_type    ; 'default'    ; 'default, 'climatology'
+    fe_data_type    ; 'default'    ; 'default', 'climatology'
     saltflux_option ; 'constant'   ; 'constant', 'prognostic'
     default_season  ; 'winter'     ; 'winter', 'summer'
 
@@ -78,7 +78,7 @@
     Cf                ; 17.          ; A 2,100
     ice_ref_salinity  ; 4.0          ; A 1,15
     trestore          ;  90          ; A 5,540
-    hs0               ; 0.           ; A 0,0.1
+    hs0               ; 0.           ; A 0,0.03
     emissivity        ; 0.985        ; A 0.95,0.999
     phi_i_mushy       ; 0.85         ; A 0,1
     kstrength         ; 1            ; A 0,1

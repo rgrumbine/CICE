@@ -53,7 +53,7 @@ class parmvary:
       self.ranges= [float(words[0]), float(words[1]) ]
 
     else:
-      self.reference = reference
+      self.reference = reference.strip()
       words = ranges.split(',')
       #debug: print('list', len(words), flush=True)
       #debug: for i in range(0,len(words)):
@@ -94,12 +94,14 @@ class parmvary:
       #debug: print("number of words in a 'list' variable ",n, w2, flush=True)
       k = rngf.integers(low = 0, high = n)
       #debug: print('list ', k, w2[k])
-      self.reference = w2[k].strip(' ')
+      #debug: print("reference on input: ",self.reference,end=" ",flush=True)
+      self.reference = w2[k].strip()
+      #debug: print("reference on output: ",self.reference,flush=True)
 
     else:
       print("unknown variation type ",self.type, flush=True)
 
-
+#-----------------------------------------------------------------------
 
 parmset = []
 
@@ -120,12 +122,26 @@ for line in open(sys.argv[1], "r"):
     count += 1
 #debug: print(count, len(parmset), flush=True )
 
-#for i in range(0, count):
-#  print(i,"  ",end="")
-#  parmset[i].show()
 
-fout = open("set_nml.evo1","w")
-for i in range(0, count):
-  parmset[i].vary()
-  parmset[i].namelist(fname = fout)
+# Change 1 and only 1 parameter, but ensure that it does get changed
+exptlist = open("exptlist.ts","w")
+print("# Test         Grid    PEs        Sets   ",file=exptlist)
 
+for k in range(0, count):
+
+  tmp = copy.deepcopy(parmset)
+  fout = open("set_nml.evo"+"{:d}".format(k),"w")
+  tries = 0
+  while ((tmp[k].reference == parmset[k].reference) and (tries < 10) ):
+    tmp[k].vary()
+    tries += 1
+  if ( tries > 9) :
+    print("tries = ",tries,tmp[k].type, flush=True)
+  else:
+    tmp[k].namelist(fname = fout)
+    print("smoke  gx3  1x1  med3,yr_out,evo"+"{:d}".format(k),file=exptlist)
+
+  fout.close()
+
+
+exptlist.close()

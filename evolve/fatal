@@ -4,3 +4,4 @@ snwgrain = .true.
 calc_Tsfc = .false.
 use_smliq_pnd = .true.
 snwredist = 'ITDrdg'
+snwredist = 'ITD'

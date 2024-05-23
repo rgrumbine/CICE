@@ -141,17 +141,6 @@ def descent(fname, parmset, pvary, nnml, exptlist):
 
 #-------- Begin Execution ------------------------------------------------
 #
-# Read in fatal mutations
-fatalities = []
-fin = open(sys.argv[2],"r")
-for line in fin:
-  words = line.split('=')
-  name  = words[0].strip()
-  val   = words[1].strip()
-  tmp   = copy.deepcopy(fatal(name, val))
-  fatalities.append(tmp )
-fin.close()
-
 # Read in full evolutionary control file:
 parmset = []
 count = 0
@@ -168,18 +157,29 @@ for line in fin:
     count += 1
 fin.close()
 
+# Read in fatal mutations
+fatalities = []
+fin = open(sys.argv[2],"r")
+for line in fin:
+  words = line.split('=')
+  name  = words[0].strip()
+  val   = words[1].strip()
+  tmp   = copy.deepcopy(fatal(name, val))
+  fatalities.append(tmp )
+fin.close()
 
-# Read in parental modifications:
+# Read in parents:
+nos = []
+exptnos = open(sys.argv[3], "r")
+for k in exptnos:
+  nos.append(int(k))
+jmax      = int(len(nos))
 
-#debug: for nml in range(3,len(sys.argv)):
-#debug:     print(nml, sys.argv[nml], flush=True)
-#debug: print(len(sys.argv) - 4, flush=True)
-#debug: exit(0)
-
+# Establish basic parameters for conducting evolution:
 pvary     = 1./float(count)
 nexpt_ref = 120
-jmax      = int(len(sys.argv) - 3)
 ndescend  = int(nexpt_ref / jmax)
+
 #debug: print(len(sys.argv), pvary, nexpt_ref, jmax, ndescend, flush=True)
 #debug: exit(0)
 
@@ -188,7 +188,7 @@ print("# Test         Grid    PEs        Sets   ",file=exptlist)
 
 # Run over each parent:
 for j in range(0, jmax):
-  fname = sys.argv[3+j]
+  fname = "parents/set_nml.evo"+"{:d}".format(nos[j])
   # Generate descendants:
   for i in range(0, ndescend):
     descent(fname, parmset, pvary, j*ndescend+i, exptlist)

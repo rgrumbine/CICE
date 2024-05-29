@@ -133,6 +133,10 @@ db_flags:
 
 $(DEPGEN): $(OBJS_DEPGEN)
 	@ echo "Building makdep"
+	@ echo `which cc`
+	@ echo SCC `which $(SCC)`
+	@ echo $(CFLAGS_HOST)
+	@ echo `module list`
 	$(SCC) -o $@ $(CFLAGS_HOST) $<
 
 #-------------------------------------------------------------------------------

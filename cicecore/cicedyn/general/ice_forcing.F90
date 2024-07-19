@@ -29,7 +29,7 @@
                               daymo, days_per_year, compute_days_between
       use ice_fileunits, only: nu_diag, nu_forcing
       use ice_exit, only: abort_ice
-      use ice_read_write, only: ice_open, ice_read, &
+      use ice_read_write, only: ice_open, ice_read, ice_check_nc, &
                                 ice_get_ncvarsize, ice_read_vec_nc, &
                                 ice_open_nc, ice_read_nc, ice_close_nc
       use ice_timers, only: ice_timer_start, ice_timer_stop, timer_readwrite, &
@@ -2276,6 +2276,9 @@
       enddo
 
       if (.not.exists) then
+         write(nu_diag,*) subname,' atm_data_dir = ',trim(atm_data_dir)
+         write(nu_diag,*) subname,' atm_data_type_prefix = ',trim(atm_data_type_prefix)
+         write(nu_diag,*) subname,' atm_data_version = ',trim(atm_data_version)
          call abort_ice(error_message=subname//' could not find forcing file')
       endif
 
@@ -3701,11 +3704,15 @@
 
 !          status = nf90_inq_dimid(fid,'nlon',dimid)
           status = nf90_inq_dimid(fid,'ni',dimid)
+          call ice_check_nc(status, subname//' ERROR: inq dimid ni', file=__FILE__, line=__LINE__)
           status = nf90_inquire_dimension(fid,dimid,len=nlon)
+          call ice_check_nc(status, subname//' ERROR: inq dim ni', file=__FILE__, line=__LINE__)
 
 !          status = nf90_inq_dimid(fid,'nlat',dimid)
           status = nf90_inq_dimid(fid,'nj',dimid)
+          call ice_check_nc(status, subname//' ERROR: inq dimid nj', file=__FILE__, line=__LINE__)
           status = nf90_inquire_dimension(fid,dimid,len=nlat)
+          call ice_check_nc(status, subname//' ERROR: inq dim nj', file=__FILE__, line=__LINE__)
 
           if( nlon .ne. nx_global ) then
             call abort_ice (error_message=subname//'ice: ocn frc file nlon ne nx_global', &
@@ -3862,11 +3869,15 @@
 
 !          status = nf90_inq_dimid(fid,'nlon',dimid)
           status = nf90_inq_dimid(fid,'ni',dimid)
+          call ice_check_nc(status, subname//' ERROR: inq dimid ni', file=__FILE__, line=__LINE__)
           status = nf90_inquire_dimension(fid,dimid,len=nlon)
+          call ice_check_nc(status, subname//' ERROR: inq dim ni', file=__FILE__, line=__LINE__)
 
 !          status = nf90_inq_dimid(fid,'nlat',dimid)
           status = nf90_inq_dimid(fid,'nj',dimid)
+          call ice_check_nc(status, subname//' ERROR: inq dimid nj', file=__FILE__, line=__LINE__)
           status = nf90_inquire_dimension(fid,dimid,len=nlat)
+          call ice_check_nc(status, subname//' ERROR: inq dim nj', file=__FILE__, line=__LINE__)
 
           if( nlon .ne. nx_global ) then
             call abort_ice (error_message=subname//'ice: ocn frc file nlon ne nx_global', &

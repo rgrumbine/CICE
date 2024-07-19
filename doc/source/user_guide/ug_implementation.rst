@@ -132,11 +132,11 @@ This is shown in Figure :ref:`fig-Cgrid`.
 The user has several ways to initialize the grid: *popgrid* reads grid
 lengths and other parameters for a nonuniform grid (including tripole
 and regional grids), and *rectgrid* creates a regular rectangular grid.
-The input files **global\_gx3.grid** and **global\_gx3.kmt** contain the
+The input files **global_gx3.grid** and **global_gx3.kmt** contain the
 :math:`\left<3^\circ\right>` POP grid and land mask;
-**global\_gx1.grid** and **global\_gx1.kmt** contain the
-:math:`\left<1^\circ\right>` grid and land mask, and **global\_tx1.grid** 
-and **global\_tx1.kmt** contain the :math:`\left<1^\circ\right>` POP 
+**global_gx1.grid** and **global_gx1.kmt** contain the
+:math:`\left<1^\circ\right>` grid and land mask, and **global_tx1.grid** 
+and **global_tx1.kmt** contain the :math:`\left<1^\circ\right>` POP 
 tripole grid and land mask. These are binary unformatted, direct access,
 Big Endian files.
 
@@ -183,7 +183,7 @@ block distribution are ``nx_block`` :math:`\times`\ ``ny_block``. The
 physical portion of a subdomain is indexed as [``ilo:ihi``, ``jlo:jhi``], with
 nghost “ghost” or “halo" cells outside the domain used for boundary
 conditions. These parameters are illustrated in :ref:`fig-grid` in one
-dimension. The routines *global\_scatter* and *global\_gather*
+dimension. The routines *global_scatter* and *global_gather*
 distribute information from the global domain to the local domains and
 back, respectively. If MPI is not being used for grid decomposition in
 the ice model, these routines simply adjust the indexing on the global
@@ -213,28 +213,30 @@ ghost cells, and the same numbering system is applied to each of the
 four subdomains.
 
 The user sets the ``NTASKS`` and ``NTHRDS`` settings in **cice.settings** 
-and chooses a block size ``block_size_x`` :math:`\times`\ ``block_size_y``, 
-``max_blocks``, and decomposition information ``distribution_type``, ``processor_shape``, 
-and ``distribution_type`` in **ice\_in**. That information is used to
-determine how the blocks are
-distributed across the processors, and how the processors are
-distributed across the grid domain. The model is parallelized over blocks
+and chooses a block size, ``block_size_x`` :math:`\times`\ ``block_size_y``,
+and decomposition information ``distribution_type``, ``processor_shape``, 
+and ``distribution_wgt`` in **ice_in**. 
+This information is used to determine how the blocks are
+distributed across the processors. The model is parallelized over blocks
 for both MPI and OpenMP.  Some suggested combinations for these
 parameters for best performance are given in Section :ref:`performance`.
 The script **cice.setup** computes some default decompositions and layouts
-but the user can overwrite the defaults by manually changing the values in 
-`ice\_in`.  At runtime, the model will print decomposition
+but the user can override the defaults by manually changing the values in 
+`ice_in`.  The number of blocks per processor can vary, and this is computed
+internally when the namelist ``max_blocks=-1``.  ``max_blocks``
+can also be set by the user, although this may use extra memory and the
+model will abort if ``max_blocks`` is set too small for the decomposition.
+At runtime, the model will print decomposition
 information to the log file, and if the block size or max blocks is 
 inconsistent with the task and thread size, the model will abort.  The 
 code will also print a warning if the maximum number of blocks is too large. 
-Although this is not fatal, it does use extra memory.  If ``max_blocks`` is
-set to -1, the code will compute a tentative ``max_blocks`` on the fly.
+Although this is not fatal, it does use extra memory.
 
-A loop at the end of routine *create\_blocks* in module
-**ice\_blocks.F90** will print the locations for all of the blocks on
+A loop at the end of routine *create_blocks* in module
+**ice_blocks.F90** will print the locations for all of the blocks on
 the global grid if the namelist variable ``debug_blocks`` is set to be true. Likewise, a similar loop at
-the end of routine *create\_local\_block\_ids* in module
-**ice\_distribution.F90** will print the processor and local block
+the end of routine *create_local_block_ids* in module
+**ice_distribution.F90** will print the processor and local block
 number for each block. With this information, the grid decomposition
 into processors and blocks can be ascertained. This ``debug_blocks`` variable 
 should be used carefully as there may be hundreds or thousands of blocks to print
@@ -242,7 +244,7 @@ and this information should be needed only rarely. ``debug_blocks``
 can be set to true using the
 ``debugblocks`` option with **cice.setup**. This information is
 much easier to look at using a debugger such as Totalview.  There is also
-an output field that can be activated in `icefields\_nml`, ``f_blkmask``, 
+an output field that can be activated in `icefields_nml`, ``f_blkmask``, 
 that prints out the variable ``blkmask`` to the history file and 
 which labels the blocks in the grid decomposition according to ``blkmask =
 my_task + iblk/100``.
@@ -427,7 +429,7 @@ restoring timescale ``trestore`` may be used (it is also used for restoring
 ocean sea surface temperature in stand-alone ice runs). This
 implementation is only intended to provide the “hooks" for a more
 sophisticated treatment; the rectangular grid option can be used to test
-this configuration. The ‘displaced\_pole’ grid option should not be used
+this configuration. The ‘displaced_pole’ grid option should not be used
 unless the regional grid contains land all along the north and south
 boundaries. The current form of the boundary condition routines does not
 allow Neumann boundary conditions, which must be set explicitly. This
@@ -470,7 +472,7 @@ The logical masks ``tmask``, ``umask``, ``nmask``, and ``emask``
 respectively) are useful in conditional statements.
 
 In addition to the land masks, two other masks are implemented in
-*dyn\_prep* in order to reduce the dynamics component’s work on a global
+*dyn_prep* in order to reduce the dynamics component’s work on a global
 grid. At each time step the logical masks ``iceTmask`` and ``iceUmask`` are
 determined from the current ice extent, such that they have the value
 “true” wherever ice exists. They also include a border of cells around
@@ -747,7 +749,7 @@ characteristics. In the ‘sectcart’ case, the domain is divided into four
 (east-west,north-south) quarters and the loops are done over each, sequentially.
 
 The ``wghtfile`` decomposition drives the decomposition based on 
-weights provided in a weight file.  That file should be a netcdf
+weights provided in a weight file.  That file should be a netCDF
 file with a double real field called ``wght`` containing the relative
 weight of each gridcell.  :ref:`fig-distrbB` (b) and (c) show
 an example.  The weights associated with each gridcell will be
@@ -842,7 +844,7 @@ is the step count at the start of a long multi-restart run, and
 is continuous across model restarts.
 
 In general, the time manager should be advanced by calling
-*advance\_timestep*.  This subroutine in **ice\_calendar.F90**
+*advance_timestep*.  This subroutine in **ice_calendar.F90**
 automatically advances the model time by ``dt``.  It also advances
 the istep numbers and calls subroutine *calendar* to update
 additional calendar data.  
@@ -912,7 +914,7 @@ may vary with each run depending on several factors including the
 model timestep, initial date, and value of ``istep0``.  
 
 The model year is limited by some integer math.  In particular, calculation
-of elapsed hours in **ice\_calendar.F90**, and the model year is
+of elapsed hours in **ice_calendar.F90**, and the model year is
 limited to the value of ``myear_max`` set in that file.  Currently, that's
 200,000 years.
 
@@ -927,10 +929,10 @@ set the namelist variables  ``year_init``, ``month_init``, ``day_init``,
 ``sec_init``, and ``dt`` in conjuction with ``days_per_year`` and 
 ``use_leap_years`` to initialize the model date, timestep, and calendar.
 To overwrite the default/namelist settings in the coupling layer,
-set the **ice\_calendar.F90** variables ``myear``, ``mmonth``, ``mday``, 
+set the **ice_calendar.F90** variables ``myear``, ``mmonth``, ``mday``, 
 ``msec`` and ``dt`` after the namelists have been read.  Subroutine
 *calendar* should then be called to update all the calendar data.
-Finally, subroutine *advance\_timestep* should be used to advance
+Finally, subroutine *advance_timestep* should be used to advance
 the model time manager.  It advances the step numbers, advances
 time by ``dt``, and updates the calendar data.  The older method
 of manually advancing the steps and adding ``dt`` to ``time`` should
@@ -945,11 +947,11 @@ Initialization and Restarts
 
 The ice model’s parameters and variables are initialized in several
 steps. Many constants and physical parameters are set in
-**ice\_constants.F90**. Namelist variables (:ref:`tabnamelist`),
-whose values can be altered at run time, are handled in *input\_data*
+**ice_constants.F90**. Namelist variables (:ref:`tabnamelist`),
+whose values can be altered at run time, are handled in *input_data*
 and other initialization routines. These variables are given default
 values in the code, which may then be changed when the input file
-**ice\_in** is read. Other physical constants, numerical parameters, and
+**ice_in** is read. Other physical constants, numerical parameters, and
 variables are first set in initialization routines for each ice model
 component or module. Then, if the ice model is being restarted from a
 previous run, core variables are read and reinitialized in
@@ -1038,12 +1040,12 @@ An additional namelist option, ``restart_coszen`` specifies whether the
 cosine of the zenith angle is included in the restart files. This is mainly
 used in coupled models.
 
-MPI is initialized in *init\_communicate* for both coupled and
+MPI is initialized in *init_communicate* for both coupled and
 stand-alone MPI runs. The ice component communicates with a flux coupler
 or other climate components via external routines that handle the
 variables listed in the `Icepack documentation <https://cice-consortium-icepack.readthedocs.io/en/main/science_guide/index.html>`_.
 For stand-alone runs,
-routines in **ice\_forcing.F90** read and interpolate data from files,
+routines in **ice_forcing.F90** read and interpolate data from files,
 and are intended merely to provide guidance for the user to write his or
 her own routines. Whether the code is to be run in stand-alone or
 coupled mode is determined at compile time, as described below.
@@ -1136,11 +1138,92 @@ relaxation parameter ``arlx1i`` effectively sets the damping timescale in
 the problem, and ``brlx`` represents the effective subcycling
 :cite:`Bouillon13` (see Section :ref:`revp`).
 
-~~~~~~~~~~~~
-Model output
-~~~~~~~~~~~~
+.. _modelio:
 
-There are a number of model output streams and formats.
+~~~~~~~~~~~~~~~~~~~~~~~~
+Model Input and Output
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _iooverview:
+
+*************
+IO Overview
+*************
+
+CICE provides the ability to read and write binary unformatted or netCDF
+data via a number of different methods.  The IO implementation is specified
+both at build-time (via selection of specific source code) and run-time (via namelist).
+Three different IO packages are available in CICE under the directory
+**cicecore/cicedyn/infrastructure/io**.  Those are io_binary, io_netcdf, and
+io_pio2, and those support IO thru binary, netCDF (https://www.unidata.ucar.edu/software/netcdf), 
+and PIO (https://github.com/NCAR/ParallelIO) interfaces respectively.
+The io_pio2 directory supports both PIO1 and PIO2 and can write data thru the
+netCDF or parallel netCDF (pnetCDF) interface.  The netCDF history files are CF-compliant, and
+header information for data contained in the netCDF files is displayed with 
+the command ``ncdump -h filename.nc``.  To select the io source code, set ``ICE_IOTYPE``
+in **cice.settings** to ``binary``, ``netcdf``, ``pio1``, or ``pio2``.
+
+At run-time, more detailed IO settings are available.  ``restart_format`` and
+``history_format`` namelist options specify the method and format further.  Valid options
+are listed in :ref:`formats`.  These options specify the format of new files created
+by CICE.  Existing files can be read in any format as long as it's consistent
+with ``ICE_IOTYPE`` defined.  Note that with ``ICE_IOTYPE = binary``, the format name
+is actually ignored.    The CICE netCDF output contains a global metadata attribute, ``io_flavor``,
+that indicates the format chosen for the file.  ``ncdump -k filename.nc`` also
+provides information about the specific netCDF file format.
+In general, the detailed format is not enforced for input files, so any netCDF format 
+can be read in CICE regardless of CICE namelist settings.
+
+.. _formats:
+
+.. table:: CICE IO formats
+
+   +--------------+----------------------+-------------+---------------------+
+   | **Namelist** | **Format**           | **Written** |  **Valid With**     |
+   | **Option**   |                      | **Thru**    |  **ICE_IOTYPE**     |
+   +--------------+----------------------+-------------+---------------------+
+   | binary       | Fortran binary       | fortran     | binary              |
+   +--------------+----------------------+-------------+---------------------+
+   | cdf1         | netCDF3-classic      | netCDF      | netcdf, pio1, pio2  |
+   +--------------+----------------------+-------------+---------------------+
+   | cdf2         | netCDF3-64bit-offset | netCDF      | netcdf, pio1, pio2  |
+   +--------------+----------------------+-------------+---------------------+
+   | cdf5         | netCDF3-64bit-data   | netCDF      | netcdf, pio1, pio2  |
+   +--------------+----------------------+-------------+---------------------+
+   | default      | binary or cdf1,      | varies      | binary, netcdf,     |
+   |              | depends on ICE_IOTYPE|             | pio1, pio2          |
+   +--------------+----------------------+-------------+---------------------+
+   | hdf5         | netCDF4 hdf5         | netCDF      | netcdf, pio1, pio2  |
+   +--------------+----------------------+-------------+---------------------+
+   | pnetcdf1     | netCDF3-classic      | pnetCDF     | pio1, pio2          |
+   +--------------+----------------------+-------------+---------------------+
+   | pnetcdf2     | netCDF3-64bit-offset | pnetCDF     | pio1, pio2          |
+   +--------------+----------------------+-------------+---------------------+
+   | pnetcdf5     | netCDF3-64bit-data   | pnetCDF     | pio1, pio2          |
+   +--------------+----------------------+-------------+---------------------+
+
+There are additional namelist options that affect PIO performance for both
+restart and history output.  [``history_,restart_``] 
+[``iotasks,root,stride``]
+namelist options control the PIO processor/task usage and specify the total number of 
+IO tasks, the root IO task, and the IO task stride respectively.
+``history_rearranger`` and ``restart_rearranger`` 
+define the PIO rearranger strategy.  Finally, [``history_,restart_``]  
+[``deflate,chunksize``] provide
+controls for hdf5 compression and chunking for the ``hdf5`` options
+in both netCDF and PIO output.  ``hdf5`` is written serially thru the
+netCDF library and in parallel thru the PIO library in CICE.  Additional
+details about the netCDF and PIO settings and implementations can 
+found in (https://www.unidata.ucar.edu/software/netcdf)
+and (https://github.com/NCAR/ParallelIO).
+
+netCDF requires CICE compilation with a netCDF library built externally.  
+PIO requires CICE compilation with a PIO and netCDF library built externally.  
+Both netCDF and PIO can be built with many options which may require additional libraries
+such as MPI, hdf5, or pnetCDF.  There are CPPs that will deprecate cdf2,
+cdf5, and hdf5 support should the netcdf library be built without those features.
+Those CPPs are ``NO_CDF2``, ``NO_CDF5``, and ``NO_HDF5``.  Those can be added
+to the Macros machine file explicity when needed.
 
 .. _history:
 
@@ -1148,65 +1231,60 @@ There are a number of model output streams and formats.
 History files
 *************
 
-CICE provides history data in binary unformatted or netCDF formats via
-separate implementations of binary, netcdf, and pio source code under the 
-directory **infrastructure/io**.  ``ICE_IOTYPE`` defined in cice.settings
-specifies the IO type and defines which source code directory is compiled.
-At the present time, binary, netcdf, and PIO are exclusive formats
-for history and restart files, and history and restart file must use the same 
-io package.  The namelist variable ``history_format`` further refines the
-format approach or style for some io packages.
+CICE provides history data output in binary unformatted or netCDF formats via
+separate implementations of binary, netCDF, and PIO interfaces as described
+above.  In addition, ``history_format`` as well as other history namelist
+options control the specific file format as well as features related to 
+IO performance, see :ref:`iooverview`.
 
-Model output data can be written as instantaneous or average data as specified
-by the ``hist_avg`` namelist array and is customizable by stream. Characters
-can be added to the ``history_filename`` to distinguish the streams. This can be changed
-by modifying ``hist_suffix`` to something other than "x".
-
-The data written at the period(s) given by ``histfreq`` and
+The data is written at the period(s) given by ``histfreq`` and
 ``histfreq_n`` relative to a reference date specified by ``histfreq_base``.  
-The files are written to binary or netCDF files prepended by ``history_file``
-in **ice_in**. These settings for history files are set in the 
+The files are written to binary or netCDF files prepended by the ``history_file``
+and ``history_suffix``
+namelist setting. The settings for history files are set in the 
 **setup_nml** section of **ice_in** (see :ref:`tabnamelist`). 
-If ``history_file`` = ‘iceh’ then the 
-filenames will have the form **iceh.[timeID].nc** or **iceh.[timeID].da**,
-depending on the output file format chosen in **cice.settings** (set
-``ICE_IOTYPE``). The netCDF history files are CF-compliant; header information for
-data contained in the netCDF files is displayed with the command ``ncdump -h
-filename.nc``. Parallel netCDF output is available using the PIO library; the
-output file attribute ``io_flavor`` distinguishes output files written with PIO from
-those written with standard netCDF. With binary files, a separate header
+The history filenames will have a form like
+**[history_file][history_suffix][_freq].[timeID].[nc,da]**
+depending on the namelist options chosen.  With binary files, a separate header
 file is written with equivalent information. Standard fields are output
-according to settings in the **icefields\_nml** section of **ice\_in** 
+according to settings in the **icefields_nml** section of **ice_in** 
 (see :ref:`tabnamelist`).
 The user may add (or subtract) variables not already available in the
 namelist by following the instructions in section :ref:`addhist`. 
 
-The history module has been divided into several
+The history implementation has been divided into several
 modules based on the desired formatting and on the variables
 themselves. Parameters, variables and routines needed by multiple
-modules is in **ice\_history\_shared.F90**, while the primary routines
+modules is in **ice_history_shared.F90**, while the primary routines
 for initializing and accumulating all of the history variables are in
-**ice\_history.F90**. These routines call format-specific code in the
-**io\_binary**, **io\_netcdf** and **io\_pio** directories. History
+**ice_history.F90**. These routines call format-specific code in the
+**io_binary**, **io_netcdf** and **io_pio2** directories. History
 variables specific to certain components or parameterizations are
-collected in their own history modules (**ice\_history\_bgc.F90**,
-**ice\_history\_drag.F90**, **ice\_history\_mechred.F90**,
-**ice\_history\_pond.F90**).
+collected in their own history modules (**ice_history_bgc.F90**,
+**ice_history_drag.F90**, **ice_history_mechred.F90**,
+**ice_history_pond.F90**).
 
 The history modules allow output at different frequencies. Five output
-frequencies (``1``, ``h``, ``d``, ``m``, ``y``) are available simultaneously during a run.
-The same variable can be output at different frequencies (say daily and
-monthly) via its namelist flag, `f\_` :math:`\left<{var}\right>`, which
-is a character string corresponding to ``histfreq`` or ‘x’ for none.
-(Grid variable flags are logicals, since they are written to all
-files, no matter what the frequency is.) If there are no namelist flags
+options (``1``, ``h``, ``d``, ``m``, ``y``) are available simultaneously for ``histfreq``
+during a run, and each stream must have a unique value for ``histfreq``.  In other words, ``d``
+cannot be used by two different streams.  Each stream has an associated frequency
+set by ``histfreq_n``.  The frequency is
+relative to a reference date specified by the corresponding entry in ``histfreq_base``.
+Each stream can be instantaneous or time averaged
+data over the frequency internal.  The ``hist_avg`` namelist turns on time averaging
+for each stream individually.
+The same model variable can be written to multiple history streams (ie. daily ``d`` and
+monthly ``m``) via its namelist flag, `f_` :math:`\left<{var}\right>`, while ``x``
+turns that history variable off.  For example, ``f_aice = 'md'`` will write aice to the
+monthly and daily streams.
+Grid variable history output flags are logicals and written to all stream files if
+turned on.  If there are no namelist flags
 with a given ``histfreq`` value, or if an element of ``histfreq_n`` is 0, then
-no file will be written at that frequency. The output period can be
-discerned from the filenames or the ``hist_suffix`` can be used.  Each history stream will be either instantaneous
-or averaged as specified by the corresponding entry in the ``hist_avg`` namelist array, and the frequency
-will be relative to a reference date specified by the corresponding entry in ``histfreq_base``.
-More information about how the frequency is
-computed is found in :ref:`timemanager`.
+no file will be written at that frequency. The history filenames are set in
+the subroutine **construct_filename** in **ice_history_shared.F90**.  
+In cases where two streams produce the same identical filename, the model will
+abort.  Use the namelist ``hist_suffix`` to make stream filenames unique.
+More information about how the frequency is computed is found in :ref:`timemanager`.
 Also, some
 Earth Sytem Models require the history file time axis to be centered in the averaging
 interval. The flag ``hist_time_axis`` will allow the user to chose ``begin``, ``middle``,
@@ -1229,7 +1307,9 @@ For example, in the namelist:
 
 Here, ``hi`` will be written to a file on every timestep, ``hs`` will be
 written once every 6 hours, ``aice`` once a month, ``meltb`` once a month AND
-once every 6 hours, and ``Tsfc`` and ``iage`` will not be written.
+once every 6 hours, and ``Tsfc`` and ``iage`` will not be written.  All streams
+are time averaged over the interval although because one stream has ``histfreq=1`` and
+``histfreq_n=1``, that is equivalent to instantaneous output each model timestep.
 
 From an efficiency standpoint, it is best to set unused frequencies in
 ``histfreq`` to ‘x’. Having output at all 5 frequencies takes nearly 5 times
@@ -1252,19 +1332,14 @@ above, ``meltb`` is called ``meltb`` in the monthly file (for backward
 compatibility with the default configuration) and ``meltb_h`` in the
 6-hourly file.
 
-Using the same frequency twice in ``histfreq`` will have unexpected
-consequences and currently will cause the code to abort. It is not
-possible at the moment to output averages once a month and also once
-every 3 months, for example.
-
-If ``write_ic`` is set to true in **ice\_in**, a snapshot of the same set
+If ``write_ic`` is set to true in **ice_in**, a snapshot of the same set
 of history fields at the start of the run will be written to the history
-directory in **iceh\_ic.[timeID].nc(da)**. Several history variables are
+directory in **iceh_ic.[timeID].nc(da)**. Several history variables are
 hard-coded for instantaneous output regardless of the ``hist_avg`` averaging flag, at
 the frequency given by their namelist flag.
 
 The normalized principal components of internal ice stress (``sig1``, ``sig2``) are computed
-in *principal\_stress* and written to the history file. This calculation
+in *principal_stress* and written to the history file. This calculation
 is not necessary for the simulation; principal stresses are merely
 computed for diagnostic purposes and included here for the user’s
 convenience.
@@ -1272,7 +1347,7 @@ convenience.
 Several history variables are available in two forms, a value
 representing an average over the sea ice fraction of the grid cell, and
 another that is multiplied by :math:`a_i`, representing an average over
-the grid cell area. Our naming convention attaches the suffix “\_ai" to
+the grid cell area. Our naming convention attaches the suffix “_ai" to
 the grid-cell-mean variable names.
 
 Beginning with CICE v6, history variables requested by the Sea Ice Model Intercomparison 
@@ -1282,9 +1357,9 @@ Project (SIMIP) :cite:`Notz16` have been added as possible history output variab
 `daily <http://clipc-services.ceda.ac.uk/dreq/u/MIPtable::SIday.html>`_ 
 requested  SIMIP variables provide the names of possible history fields in CICE. 
 However, each of the additional variables can be output at any temporal frequency 
-specified in the **icefields\_nml** section of **ice\_in** as detailed above.
+specified in the **icefields_nml** section of **ice_in** as detailed above.
 Additionally, a new history output variable, ``f_CMIP``, has been added. When ``f_CMIP``
-is added to the **icefields\_nml** section of **ice\_in** then all SIMIP variables
+is added to the **icefields_nml** section of **ice_in** then all SIMIP variables
 will be turned on for output at the frequency specified by ``f_CMIP``. 
 
 It may also be helpful for debugging to increase the precision of the history file
@@ -1297,7 +1372,7 @@ Diagnostic files
 
 Like ``histfreq``, the parameter ``diagfreq`` can be used to regulate how often
 output is written to a log file. The log file unit to which diagnostic
-output is written is set in **ice\_fileunits.F90**. If ``diag_type`` =
+output is written is set in **ice_fileunits.F90**. If ``diag_type`` =
 ‘stdout’, then it is written to standard out (or to **ice.log.[ID]** if
 you redirect standard out as in **cice.run**); otherwise it is written
 to the file given by ``diag_file``. 
@@ -1311,7 +1386,7 @@ useful for checking global conservation of mass and energy.
 ``print_points`` writes data for two specific grid points defined by the
 input namelist ``lonpnt`` and ``latpnt``. By default, one
 point is near the North Pole and the other is in the Weddell Sea; these
-may be changed in **ice\_in**.  
+may be changed in **ice_in**.  
 
 The namelist ``debug_model`` prints detailed
 debug diagnostics for a single point as the model advances.  The point is defined
@@ -1324,16 +1399,16 @@ namelist, the point associated with ``lonpnt(1)`` and ``latpnt(1)`` is used.
 in detail at a particular (usually failing) grid point.
 
 Memory use diagnostics are controlled by the logical namelist ``memory_stats``.
-This feature uses an intrinsic query in C defined in **ice\_memusage\_gptl.c**.
+This feature uses an intrinsic query in C defined in **ice_memusage_gptl.c**.
 Memory diagnostics will be written at the the frequency defined by
 diagfreq.
 
-Timers are declared and initialized in **ice\_timers.F90**, and the code
-to be timed is wrapped with calls to *ice\_timer\_start* and
-*ice\_timer\_stop*. Finally, *ice\_timer\_print* writes the results to
+Timers are declared and initialized in **ice_timers.F90**, and the code
+to be timed is wrapped with calls to *ice_timer_start* and
+*ice_timer_stop*. Finally, *ice_timer_print* writes the results to
 the log file. The optional “stats" argument (true/false) prints
 additional statistics. The "stats" argument can be set by the ``timer_stats``
-namelist.  Calling *ice\_timer\_print\_all* prints all of
+namelist.  Calling *ice_timer_print_all* prints all of
 the timings at once, rather than having to call each individually.
 Currently, the timers are set up as in :ref:`timers`.
 Section :ref:`addtimer` contains instructions for adding timers.
@@ -1345,8 +1420,8 @@ the code, including the dynamics and advection routines.  The
 Dynamics, Advection, and Column timers do not overlap and represent 
 most of the overall model work.
 
-The timers use *MPI\_WTIME* for parallel runs and the F90 intrinsic
-*system\_clock* for single-processor runs.
+The timers use *MPI_WTIME* for parallel runs and the F90 intrinsic
+*system_clock* for single-processor runs.
 
 .. _timers:
 
@@ -1404,18 +1479,16 @@ The timers use *MPI\_WTIME* for parallel runs and the F90 intrinsic
 Restart files
 *************
 
-CICE provides restart data in binary unformatted or netCDF formats via
-separate implementations of binary, netcdf, and pio source code under the 
-directory **infrastructure/io**.  ``ICE_IOTYPE`` defined in cice.settings
-specifies the IO type and defines which source code directory is compiled.
-At the present time, binary, netcdf, and PIO are exclusive formats
-for history and restart files, and history and restart file must use the same 
-io package.  The namelist variable ``restart_format`` further refines the
-format approach or style for some io packages.
+CICE reads and writes restart data in binary unformatted or netCDF formats via
+separate implementations of binary, netCDF, and PIO interfaces as described
+above.  In addition, ``restart_format`` as well as other restart namelist
+options control the specific file format as well as features related to 
+IO performance, see :ref:`iooverview`.
 
 The restart files created by CICE contain all of the variables needed
 for a full, exact restart. The filename begins with the character string
-‘iced.’, and the restart dump frequency is given by the namelist
+defined by the ``restart_file`` namelist input, and the restart dump frequency 
+is given by the namelist
 variables ``dumpfreq`` and ``dumpfreq_n`` relative to a reference date
 specified by ``dumpfreq_base``.  Multiple restart frequencies are supported
 in the code with a similar mechanism to history streams.  The pointer to the filename from

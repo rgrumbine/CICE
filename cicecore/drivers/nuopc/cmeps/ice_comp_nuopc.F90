@@ -23,21 +23,22 @@ module ice_comp_nuopc
   use ice_domain_size    , only : nx_global, ny_global
   use ice_grid           , only : grid_format, init_grid2
   use ice_communicate    , only : init_communicate, my_task, master_task, mpi_comm_ice
-  use ice_calendar       , only : force_restart_now, write_ic, init_calendar
-  use ice_calendar       , only : idate, mday, mmonth, myear, year_init
+  use ice_calendar       , only : force_restart_now, write_ic
+  use ice_calendar       , only : idate, idate0,  mday, mmonth, myear, year_init, month_init, day_init
   use ice_calendar       , only : msec, dt, calendar, calendar_type, nextsw_cday, istep
-  use ice_calendar       , only : ice_calendar_noleap, ice_calendar_gregorian
+  use ice_calendar       , only : ice_calendar_noleap, ice_calendar_gregorian, use_leap_years
   use ice_kinds_mod      , only : dbl_kind, int_kind, char_len, char_len_long
   use ice_fileunits      , only : nu_diag, nu_diag_set, inst_index, inst_name
   use ice_fileunits      , only : inst_suffix, release_all_fileunits, flush_fileunit
-  use ice_restart_shared , only : runid, runtype, restart, use_restart_time, restart_dir, restart_file
+  use ice_restart_shared , only : runid, runtype, restart, use_restart_time, restart_dir, restart_file, restart_format, restart_chunksize
   use ice_history        , only : accum_hist
+  use ice_history_shared , only : history_format, history_chunksize
   use ice_exit           , only : abort_ice
   use icepack_intfc      , only : icepack_warnings_flush, icepack_warnings_aborted
   use icepack_intfc      , only : icepack_init_orbit, icepack_init_parameters, icepack_query_orbit
   use icepack_intfc      , only : icepack_query_tracer_flags, icepack_query_parameters
   use cice_wrapper_mod   , only : t_startf, t_stopf, t_barrierf
-  use cice_wrapper_mod   , only : shr_file_getlogunit, shr_file_setlogunit
+  use cice_wrapper_mod   , only : shr_log_getlogunit, shr_log_setlogunit
   use cice_wrapper_mod   , only : ufs_settimer, ufs_logtimer, ufs_file_setlogunit, wtime
 #ifdef CESMCOUPLED
   use shr_const_mod
@@ -496,7 +497,7 @@ contains
     ! Note that sets the nu_diag module variable in ice_fileunits
     ! Set the nu_diag_set flag so it's not reset later
 
-    call shr_file_setLogUnit (shrlogunit)
+    call shr_log_setLogUnit (shrlogunit)
     call ufs_file_setLogUnit('./log.ice.timer',nu_timer,runtimelog)
 
     call NUOPC_CompAttributeGet(gcomp, name="diro", value=cvalue, &
@@ -645,6 +646,38 @@ contains
        call abort_ice(trim(errmsg))
     endif
 
+    ! Netcdf output created by PIO
+    call NUOPC_CompAttributeGet(gcomp, name="pio_typename", value=cvalue, &
+         isPresent=isPresent, isSet=isSet, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (isPresent .and. isSet) then
+      if (trim(history_format)/='cdf1' .and. mastertask) then
+         write(nu_diag,*) trim(subname)//history_format//'WARNING: history_format from cice_namelist ignored'
+         write(nu_diag,*) trim(subname)//'WARNING: using '//trim(cvalue)//' from ICE_modelio'
+      endif
+      if (trim(restart_format)/='cdf1' .and. mastertask) then
+         write(nu_diag,*) trim(subname)//restart_format//'WARNING: restart_format from cice_namelist ignored'
+         write(nu_diag,*) trim(subname)//'WARNING: using '//trim(cvalue)//' from ICE_modelio'
+      endif
+
+      ! The only reason to set these is to detect in ice_history_write if the chunk/deflate settings are ok.
+      select case (trim(cvalue))
+      case ('netcdf4p')
+         history_format='hdf5'
+         restart_format='hdf5'
+      case ('netcdf4c')
+         if (mastertask) write(nu_diag,*) trim(subname)//'WARNING: pio_typename = netcdf4c is superseded, use netcdf4p'
+         history_format='hdf5'
+         restart_format='hdf5'
+      case default !pio_typename=netcdf or pnetcdf
+         ! do nothing
+      end select
+    else
+      if(mastertask) write(nu_diag,*) trim(subname)//'WARNING: pio_typename from driver needs to be set for netcdf output to work'
+    end if
+
+    
+
 #else
 
     ! Read the cice namelist as part of the call to cice_init1
@@ -758,7 +791,7 @@ contains
     call cice_init2()
     call t_stopf ('cice_init2')
     !---------------------------------------------------------------------------
-    ! use EClock to reset calendar information on initial start
+    ! use EClock to reset calendar information
     !---------------------------------------------------------------------------
 
     ! - on initial run
@@ -774,7 +807,7 @@ contains
        if (ref_ymd /= start_ymd .or. ref_tod /= start_tod) then
           if (my_task == master_task) then
              write(nu_diag,*) trim(subname),': ref_ymd ',ref_ymd, ' must equal start_ymd ',start_ymd
-             write(nu_diag,*) trim(subname),': ref_ymd ',ref_tod, ' must equal start_ymd ',start_tod
+             write(nu_diag,*) trim(subname),': ref_tod',ref_tod, ' must equal start_tod ',start_tod
           end if
        end if
 
@@ -805,6 +838,19 @@ contains
        endif
 
     end if
+
+    !  - start time from ESMF clock. Used to set history time units
+    idate0    = start_ymd
+    year_init = (idate0/10000)
+    month_init= (idate0-year_init*10000)/100           ! integer month of basedate
+    day_init  = idate0-year_init*10000-month_init*100 
+
+    !  - Set use_leap_years based on calendar (as some CICE calls use this instead of the calendar type)
+    if (calendar_type == ice_calendar_gregorian) then
+      use_leap_years = .true.
+    else
+      use_leap_years = .false. ! no_leap calendars
+    endif
 
     call calendar()     ! update calendar info
 
@@ -873,6 +919,12 @@ contains
           end if
        enddo
        deallocate(lfieldnamelist)
+       call State_SetScalar(dble(0), flds_scalar_index_nx, exportState, &
+            flds_scalar_name, flds_scalar_num, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call State_SetScalar(dble(0), flds_scalar_index_ny, exportState, &
+            flds_scalar_name, flds_scalar_num, rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
        ! *******************
        ! *** RETURN HERE ***
        ! *******************
@@ -1015,8 +1067,8 @@ contains
     ! Reset shr logging to my log file
     !--------------------------------
 
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_setLogUnit (nu_diag)
+    call shr_log_getLogUnit (shrlogunit)
+    call shr_log_setLogUnit (nu_diag)
 
     !--------------------------------
     ! Query the Component for its clock, importState and exportState
@@ -1155,7 +1207,7 @@ contains
     end if
 
     ! reset shr logging to my original values
-    call shr_file_setLogUnit (shrlogunit)
+    call shr_log_setLogUnit (shrlogunit)
 
     !--------------------------------
     ! stop timers and print timer info

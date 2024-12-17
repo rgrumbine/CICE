@@ -1,0 +1,11 @@
+diagfreq       = 1
+npt_unit       = 'd'
+npt            = 365
+dumpfreq       = 'd'
+dumpfreq_n     = 365
+histfreq       = 'd','x','x','x','x'
+f_aice         = 'd'
+f_hi           = 'd'
+f_uvel         = 'd'
+f_vvel         = 'd'
+f_Tsfc         = 'd'

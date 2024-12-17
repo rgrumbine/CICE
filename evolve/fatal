@@ -1,0 +1,7 @@
+capping_method = 'min'
+kridge = -1
+snwgrain = .true.
+calc_Tsfc = .false.
+use_smliq_pnd = .true.
+snwredist = 'ITDrdg'
+snwredist = 'ITD'

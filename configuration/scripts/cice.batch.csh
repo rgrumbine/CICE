@@ -382,6 +382,17 @@ cat >> ${jobfile} << EOFB
 ##SBATCH --mail-user=xxx@noaa.gov
 EOFB
 
+else if (${ICE_MACHINE} =~ wcoss2*) then
+cat >> ${jobfile} << EOFB
+#PBS -N ${ICE_CASENAME}
+#PBS -o ${ICE_CASENAME}
+#PBS -j oe 
+#PBS -A ICE-DEV
+#PBS -l walltime=${batchtime}
+##PBS -l select=${nnodes}:ncpus=${taskpernodelimit}
+#PBS -l select=${nnodes}:ncpus=${corespernode}:mpiprocs=${taskpernodelimit}:ompthreads=${nthrds}
+EOFB
+
 else if (${ICE_MACHINE} =~ orion*) then
 cat >> ${jobfile} << EOFB
 #SBATCH -J ${ICE_CASENAME}

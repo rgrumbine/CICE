@@ -342,6 +342,22 @@
          frz_onset, &! day of year that freezing begins (congel or frazil)
          frazil_diag ! frazil ice growth diagnostic (m/step-->cm/day)
 
+      real (kind=dbl_kind), dimension (:,:,:), allocatable, public :: &
+         dpnd_flush,  & ! pond flushing rate due to ice permeability (m/step)
+         dpnd_expon,  & ! exponential pond drainage rate (m/step)
+         dpnd_freebd, & ! pond drainage rate due to freeboard constraint (m/step)
+         dpnd_initial,& ! runoff rate due to rfrac (m/step)
+         dpnd_dlid,   & ! pond loss/gain (+/-) to ice lid freezing/melting (m/step)
+         dpnd_melt,   & ! pond 'drainage' due to ice melting (m / step)
+         dpnd_ridge     ! pond 'drainage' due to ridging (m)
+
+      real (kind=dbl_kind), dimension (:,:,:,:), allocatable, public :: &
+         dpnd_flushn, & ! category pond flushing rate due to ice permeability (m/step)
+         dpnd_exponn, & ! category exponential pond drainage rate (m/step)
+         dpnd_freebdn,& ! category pond drainage rate due to freeboard constraint (m/step)
+         dpnd_initialn,&! category runoff rate due to rfrac (m/step)
+         dpnd_dlidn     ! category pond loss/gain (+/-) to ice lid freezing/melting (m/step)
+
       real (kind=dbl_kind), dimension (:,:,:,:), allocatable, public :: &
          fsurfn,   & ! category fsurf
          fcondtopn,& ! category fcondtop
@@ -609,11 +625,6 @@
          stat=ierr)
       if (ierr/=0) call abort_ice('(alloc_flux): Out of memory')
 
-      swuvrdr(:,:,:) = c0
-      swuvrdf(:,:,:) = c0
-      swpardr(:,:,:) = c0
-      swpardf(:,:,:) = c0
-
       if (grid_ice == "CD" .or. grid_ice == "C") &
          allocate( &
          taubxN     (nx_block,ny_block,max_blocks), & ! seabed stress (x) at N points (N/m^2)
@@ -647,7 +658,24 @@
          stressmU   (nx_block,ny_block,max_blocks), & ! sigma11-sigma22
          stress12U  (nx_block,ny_block,max_blocks), & ! sigma12
          stat=ierr)
-      if (ierr/=0) call abort_ice('(alloc_flux): Out of memory')
+      if (ierr/=0) call abort_ice('(alloc_flux): Out of memory (C or CD grid)')
+
+      ! Pond diagnostics
+      allocate( &
+         dpnd_flush   (nx_block,ny_block,max_blocks), & ! pond flushing rate due to ice permeability (m/step)
+         dpnd_expon   (nx_block,ny_block,max_blocks), & ! exponential pond drainage rate (m/step)
+         dpnd_freebd  (nx_block,ny_block,max_blocks), & ! pond drainage rate due to freeboard constraint (m/step)
+         dpnd_initial (nx_block,ny_block,max_blocks), & ! runoff rate due to rfrac (m/step)
+         dpnd_dlid    (nx_block,ny_block,max_blocks), & ! pond loss/gain (+/-) to ice lid freezing/melting (m/step)
+         dpnd_melt    (nx_block,ny_block,max_blocks), & ! pond 'drainage' due to ice melting (m / step)
+         dpnd_ridge   (nx_block,ny_block,max_blocks), & ! pond 'drainage' due to ridging (m)
+         dpnd_flushn  (nx_block,ny_block,ncat,max_blocks), & ! category pond flushing rate due to ice permeability (m/step)
+         dpnd_exponn  (nx_block,ny_block,ncat,max_blocks), & ! category exponential pond drainage rate (m/step)
+         dpnd_freebdn (nx_block,ny_block,ncat,max_blocks), & ! category pond drainage rate due to freeboard constraint (m/step)
+         dpnd_initialn(nx_block,ny_block,ncat,max_blocks), & ! category runoff rate due to rfrac (m/step)
+         dpnd_dlidn   (nx_block,ny_block,ncat,max_blocks), & ! category pond loss/gain (+/-) to ice lid freezing/melting (m/step)
+         stat=ierr)
+      if (ierr/=0) call abort_ice('(alloc_flux): Out of memory (ponds)')
 
       end subroutine alloc_flux
 
@@ -752,6 +780,11 @@
          flatn_f    (:,:,:,:) = -1.0_dbl_kind ! latent heat flux (W/m^2)
          fsensn_f   (:,:,:,:) =  c0           ! sensible heat flux (W/m^2)
       endif !
+
+      swuvrdr(:,:,:) = c0                ! visible uvr flux, direct (W/m^2)
+      swuvrdf(:,:,:) = c0                ! visible uvr flux, diffuse (W/m^2)
+      swpardr(:,:,:) = c0                ! visible par flux, direct (W/m^2)
+      swpardf(:,:,:) = c0                ! visible par flux, diffuse (W/m^2)
 
       fiso_atm  (:,:,:,:) = c0           ! isotope deposition rate (kg/m2/s)
       faero_atm (:,:,:,:) = c0           ! aerosol deposition rate (kg/m2/s)
@@ -969,6 +1002,7 @@
 
       logical (kind=log_kind) :: &
           formdrag, &
+          tr_pond,  &
           tr_iage
 
       integer (kind=int_kind) :: &
@@ -984,6 +1018,7 @@
 
       call icepack_query_parameters(formdrag_out=formdrag)
       call icepack_query_tracer_flags(tr_iage_out=tr_iage)
+      call icepack_query_tracer_flags(tr_pond_out=tr_pond)
       call icepack_query_tracer_indices(nt_iage_out=nt_iage)
       call icepack_query_parameters( dragio_out=dragio, &
          vonkar_out=vonkar, zref_out=zref, iceruf_out=iceruf)
@@ -1028,6 +1063,20 @@
       apeff_ai (:,:,:) = c0
       snowfrac (:,:,:) = c0
       frazil_diag (:,:,:) = c0
+
+      ! Extra pond diagnostics
+      dpnd_flush(:,:,:)   = c0
+      dpnd_expon(:,:,:)   = c0
+      dpnd_freebd(:,:,:)  = c0
+      dpnd_initial(:,:,:) = c0
+      dpnd_dlid(:,:,:)    = c0
+      dpnd_melt(:,:,:)    = c0
+      dpnd_ridge(:,:,:)   = c0
+      dpnd_flushn(:,:,:,:)   = c0
+      dpnd_exponn(:,:,:,:)   = c0
+      dpnd_freebdn(:,:,:,:)  = c0
+      dpnd_initialn(:,:,:,:) = c0
+      dpnd_dlidn(:,:,:,:)    = c0
 
       ! drag coefficients are computed prior to the atmo_boundary call,
       ! during the thermodynamics section

@@ -30,13 +30,14 @@
           field_loc_center, field_loc_NEcorner, field_loc_Nface, field_loc_Eface, &
           field_type_scalar, field_type_vector, field_type_angle
       use ice_communicate, only: my_task, master_task
-      use ice_blocks, only: block, get_block, nx_block, ny_block, nghost
+      use ice_blocks, only: block, get_block, nx_block, ny_block, nghost, &
+          ew_boundary_type, ns_boundary_type
       use ice_domain_size, only: nx_global, ny_global, max_blocks
       use ice_domain, only: blocks_ice, nblocks, halo_info, distrb_info, &
-          ew_boundary_type, ns_boundary_type, init_domain_distribution
+          init_domain_distribution
       use ice_fileunits, only: nu_diag, nu_grid, nu_kmt, &
           get_fileunit, release_fileunit, flush_fileunit
-      use ice_gather_scatter, only: gather_global, scatter_global, gather_global_ext, scatter_global_ext
+      use ice_gather_scatter, only: gather_global, scatter_global
       use ice_read_write, only: ice_read, ice_read_nc, ice_read_global, &
           ice_read_global_nc, ice_open, ice_open_nc, ice_close_nc, ice_check_nc
       use ice_timers, only: timer_bound, ice_timer_start, ice_timer_stop
@@ -950,7 +951,7 @@
          call ice_close_nc(fid_kmt)
       elseif (filetype == 'nc_ext') then
          call ice_open_nc(kmt_file,fid_kmt)
-         call ice_read_nc(fid_kmt,1,mask_fieldname,kmt,diag,restart_ext=.true., &
+         call ice_read_nc(fid_kmt,1,mask_fieldname,kmt,diag,grid_ext=.true., &
                           field_loc=field_loc_center, &
                           field_type=field_type_scalar)
          call ice_close_nc(fid_kmt)
@@ -1270,17 +1271,17 @@
 
       fieldname='ulat'
       call ice_read_global_nc(fid_grid,1,fieldname,work_g1x,diag) ! ULAT
-      call scatter_global_ext(ULAT, work_g1x, master_task, distrb_info)
+      call scatter_global(ULAT, work_g1x, master_task, distrb_info, grid_ext=.true.)
       call gridbox_verts(ULAT,latt_bounds)
 
       fieldname='ulon'
       call ice_read_global_nc(fid_grid,1,fieldname,work_g1x,diag) ! ULON
-      call scatter_global_ext(ULON, work_g1x, master_task, distrb_info)
+      call scatter_global(ULON, work_g1x, master_task, distrb_info, grid_ext=.true.)
       call gridbox_verts(ULON,lont_bounds)
 
       fieldname='angle'
       call ice_read_global_nc(fid_grid,1,fieldname,work_g1x,diag) ! ANGLE
-      call scatter_global_ext(ANGLE, work_g1x, master_task, distrb_info)
+      call scatter_global(ANGLE, work_g1x, master_task, distrb_info, grid_ext=.true.)
       ! fix ANGLE: roundoff error due to single precision
       where (ANGLE >  pi) ANGLE =  pi
       where (ANGLE < -pi) ANGLE = -pi
@@ -1299,17 +1300,17 @@
       call broadcast_scalar(l_readCenter,master_task)
       if (l_readCenter) then
          call ice_read_global_nc(fid_grid,1,fieldname,work_g1x,diag)
-         call scatter_global_ext(ANGLET, work_g1x, master_task, distrb_info)
+         call scatter_global(ANGLET, work_g1x, master_task, distrb_info, grid_ext=.true.)
          where (ANGLET >  pi) ANGLET =  pi
          where (ANGLET < -pi) ANGLET = -pi
 
          fieldname="tlon"
          call ice_read_global_nc(fid_grid,1,fieldname,work_g1x,diag)
-         call scatter_global_ext(TLON, work_g1x, master_task, distrb_info)
+         call scatter_global(TLON, work_g1x, master_task, distrb_info, grid_ext=.true.)
 
          fieldname="tlat"
          call ice_read_global_nc(fid_grid,1,fieldname,work_g1x,diag)
-         call scatter_global_ext(TLAT, work_g1x, master_task, distrb_info)
+         call scatter_global(TLAT, work_g1x, master_task, distrb_info, grid_ext=.true.)
       endif
       !-----------------------------------------------------------------
       ! cell dimensions
@@ -1328,7 +1329,7 @@
             G_HTN = work_g1x
          endif
       endif
-      call scatter_global_ext(HTN, work_g1x, master_task, distrb_info)
+      call scatter_global(HTN, work_g1x, master_task, distrb_info, grid_ext=.true.)
 
       dxN(:,:,:) = HTN(:,:,:)
       do iblk = 1, nblocks
@@ -1367,7 +1368,7 @@
       if (save_ghte_ghtn) then
          G_HTE = work_g1x
       endif
-      call scatter_global_ext(HTE, work_g1x, master_task, distrb_info)
+      call scatter_global(HTE, work_g1x, master_task, distrb_info, grid_ext=.true.)
       dyE(:,:,:) = HTE(:,:,:)
       do iblk = 1, nblocks
          this_block = get_block(blocks_ice(iblk),iblk)
@@ -2099,7 +2100,7 @@
       call ice_HaloExtrapolate(HTN, distrb_info, &
                                ew_boundary_type, ns_boundary_type)
       if (save_ghte_ghtn) then
-         call gather_global_ext(G_HTN, HTN, master_task, distrb_info)
+         call gather_global(G_HTN, HTN, master_task, distrb_info, grid_ext=.true.)
       endif
       dxN(:,:,:) = HTN(:,:,:)
       call scatter_global(dxE, G_dxE, master_task, distrb_info, &
@@ -2204,7 +2205,7 @@
       call ice_HaloExtrapolate(HTE, distrb_info, &
                                ew_boundary_type, ns_boundary_type)
       if (save_ghte_ghtn) then
-         call gather_global_ext(G_HTE, HTE, master_task, distrb_info)
+         call gather_global(G_HTE, HTE, master_task, distrb_info, grid_ext=.true.)
       endif
       dyE(:,:,:) = HTE(:,:,:)
       call scatter_global(dyU, G_dyU, master_task, distrb_info, &
@@ -3105,7 +3106,7 @@
       call ice_HaloExtrapolate(HTN, distrb_info, &
                                ew_boundary_type, ns_boundary_type)
       if (save_ghte_ghtn) then
-         call gather_global_ext(G_HTN, HTN, master_task, distrb_info)
+         call gather_global(G_HTN, HTN, master_task, distrb_info, grid_ext=.true.)
       endif
       call scatter_global(dxU, work_g2, master_task, distrb_info, &
                           field_loc_NEcorner, field_type_scalar)
@@ -3219,7 +3220,7 @@
       call ice_HaloExtrapolate(HTE, distrb_info, &
                                ew_boundary_type, ns_boundary_type)
       if (save_ghte_ghtn) then
-         call gather_global_ext(G_HTE, HTE, master_task, distrb_info)
+         call gather_global(G_HTE, HTE, master_task, distrb_info, grid_ext=.true.)
       endif
       call scatter_global(dyU, work_g2, master_task, distrb_info, &
                           field_loc_NEcorner, field_type_scalar)

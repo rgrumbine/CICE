@@ -2089,11 +2089,11 @@
 
       subroutine read_restart_eap()
 
-      use ice_blocks, only: nghost
+      use ice_blocks, only: nghost, ns_boundary_type
       use ice_boundary, only: ice_HaloUpdate_stress
       use ice_constants, only:  &
           field_loc_center, field_type_scalar
-      use ice_domain, only: nblocks, halo_info, ns_boundary_type
+      use ice_domain, only: nblocks, halo_info
       use ice_restart, only: read_restart_field
 
       ! local variables

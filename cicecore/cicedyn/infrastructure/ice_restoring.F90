@@ -24,13 +24,13 @@
 
       use ice_kinds_mod
       use ice_blocks, only: block, get_block, nx_block, ny_block, nghost, &
-          nblocks_x, nblocks_y
+          nblocks_x, nblocks_y, &
+          ew_boundary_type, ns_boundary_type
       use ice_communicate, only: my_task, master_task
       use ice_constants, only: c0, c1, c2, p2, p5, c4
       use ice_domain_size, only: nx_global, ny_global, ncat, max_blocks, &
           nilyr, nslyr, nfsd, n_iso, n_aero
       use ice_domain, only: nblocks, blocks_ice, &
-          ew_boundary_type, ns_boundary_type, &
           max_set_boundary_flds, num_set_boundary_flds, set_boundary_flds
       use ice_exit, only: abort_ice
       use ice_fileunits, only: nu_diag
@@ -350,65 +350,65 @@
 
       ! aicen, vicen, vsnon
 
-      call ice_read_nc(nu_restoring, 1, 'aicen', aicen_restoring, diag, restart_ext=.true.)
-      call ice_read_nc(nu_restoring, 1, 'vicen', vicen_restoring, diag, restart_ext=.true.)
-      call ice_read_nc(nu_restoring, 1, 'vsnon', vsnon_restoring, diag, restart_ext=.true.)
+      call ice_read_nc(nu_restoring, 1, 'aicen', aicen_restoring, diag, grid_ext=.true.)
+      call ice_read_nc(nu_restoring, 1, 'vicen', vicen_restoring, diag, grid_ext=.true.)
+      call ice_read_nc(nu_restoring, 1, 'vsnon', vsnon_restoring, diag, grid_ext=.true.)
 
       ! velocity
 
-      call ice_read_nc(nu_restoring, 1, 'uvel', uvel_restoring, diag, restart_ext=.true.)
-      call ice_read_nc(nu_restoring, 1, 'vvel', vvel_restoring, diag, restart_ext=.true.)
+      call ice_read_nc(nu_restoring, 1, 'uvel', uvel_restoring, diag, grid_ext=.true.)
+      call ice_read_nc(nu_restoring, 1, 'vvel', vvel_restoring, diag, grid_ext=.true.)
 
       ! Tsfcn
 
-      call ice_read_nc(nu_restoring, 1, 'Tsfcn', trcrn_restoring(:,:,nt_Tsfc,:,:), diag, restart_ext=.true.)
+      call ice_read_nc(nu_restoring, 1, 'Tsfcn', trcrn_restoring(:,:,nt_Tsfc,:,:), diag, grid_ext=.true.)
 
       ! sice
 
       do k=1,nilyr
          write(nchar,'(i3.3)') k
-         call ice_read_nc(nu_restoring, 1, 'sice'//trim(nchar), trcrn_restoring(:,:,nt_sice+k-1,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'sice'//trim(nchar), trcrn_restoring(:,:,nt_sice+k-1,:,:), diag, grid_ext=.true.)
       enddo
 
       ! qice
 
       do k=1,nilyr
          write(nchar,'(i3.3)') k
-         call ice_read_nc(nu_restoring, 1, 'qice'//trim(nchar), trcrn_restoring(:,:,nt_qice+k-1,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'qice'//trim(nchar), trcrn_restoring(:,:,nt_qice+k-1,:,:), diag, grid_ext=.true.)
       enddo
 
       ! qsno
 
       do k=1,nslyr
          write(nchar,'(i3.3)') k
-         call ice_read_nc(nu_restoring, 1, 'qsno'//trim(nchar), trcrn_restoring(:,:,nt_qsno+k-1,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'qsno'//trim(nchar), trcrn_restoring(:,:,nt_qsno+k-1,:,:), diag, grid_ext=.true.)
       enddo
 
       ! iage
 
       if (tr_iage) then
-         call ice_read_nc(nu_restoring, 1, 'iage', trcrn_restoring(:,:,nt_iage,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'iage', trcrn_restoring(:,:,nt_iage,:,:), diag, grid_ext=.true.)
       endif
 
       ! FY
 
       if (tr_FY) then
-         call ice_read_nc(nu_restoring, 1, 'FY', trcrn_restoring(:,:,nt_FY,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'FY', trcrn_restoring(:,:,nt_FY,:,:), diag, grid_ext=.true.)
       endif
 
       ! lvl
 
       if (tr_lvl) then
-         call ice_read_nc(nu_restoring, 1, 'alvl', trcrn_restoring(:,:,nt_alvl,:,:), diag, restart_ext=.true.)
-         call ice_read_nc(nu_restoring, 1, 'vlvl', trcrn_restoring(:,:,nt_vlvl,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'alvl', trcrn_restoring(:,:,nt_alvl,:,:), diag, grid_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'vlvl', trcrn_restoring(:,:,nt_vlvl,:,:), diag, grid_ext=.true.)
       endif
 
       ! pond lvl, pond topo, pond sealvl
 
       if (tr_pond) then
-         call ice_read_nc(nu_restoring, 1, 'apnd',  trcrn_restoring(:,:,nt_apnd,:,:), diag, restart_ext=.true.)
-         call ice_read_nc(nu_restoring, 1, 'hpnd',  trcrn_restoring(:,:,nt_hpnd,:,:), diag, restart_ext=.true.)
-         call ice_read_nc(nu_restoring, 1, 'ipnd',  trcrn_restoring(:,:,nt_ipnd,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'apnd',  trcrn_restoring(:,:,nt_apnd,:,:), diag, grid_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'hpnd',  trcrn_restoring(:,:,nt_hpnd,:,:), diag, grid_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'ipnd',  trcrn_restoring(:,:,nt_ipnd,:,:), diag, grid_ext=.true.)
       endif
 
       ! snow
@@ -416,10 +416,10 @@
       if (tr_snow) then
          do k=1,nslyr
             write(nchar,'(i3.3)') k
-            call ice_read_nc(nu_restoring, 1, 'smice'//trim(nchar), trcrn_restoring(:,:,nt_smice+k-1,:,:), diag, restart_ext=.true.)
-            call ice_read_nc(nu_restoring, 1, 'smliq'//trim(nchar), trcrn_restoring(:,:,nt_smliq+k-1,:,:), diag, restart_ext=.true.)
-            call ice_read_nc(nu_restoring, 1, 'rhos'//trim(nchar), trcrn_restoring(:,:,nt_rhos+k-1,:,:), diag, restart_ext=.true.)
-            call ice_read_nc(nu_restoring, 1, 'rsnw'//trim(nchar), trcrn_restoring(:,:,nt_rsnw+k-1,:,:), diag, restart_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'smice'//trim(nchar), trcrn_restoring(:,:,nt_smice+k-1,:,:), diag, grid_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'smliq'//trim(nchar), trcrn_restoring(:,:,nt_smliq+k-1,:,:), diag, grid_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'rhos'//trim(nchar), trcrn_restoring(:,:,nt_rhos+k-1,:,:), diag, grid_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'rsnw'//trim(nchar), trcrn_restoring(:,:,nt_rsnw+k-1,:,:), diag, grid_ext=.true.)
          enddo
       endif
 
@@ -428,7 +428,7 @@
       if (tr_fsd) then
          do k=1,nfsd
             write(nchar,'(i3.3)') k
-            call ice_read_nc(nu_restoring, 1, 'fsd'//trim(nchar), trcrn_restoring(:,:,nt_fsd+k-1,:,:), diag, restart_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'fsd'//trim(nchar), trcrn_restoring(:,:,nt_fsd+k-1,:,:), diag, grid_ext=.true.)
          enddo
       endif
 
@@ -437,8 +437,8 @@
       if (tr_iso) then
           do k = 1, n_iso
              write(nchar,'(i3.3)') k
-             call ice_read_nc(nu_restoring, 1, 'isosno'//trim(nchar), trcrn_restoring(:,:,nt_isosno+k-1,:,:), diag, restart_ext=.true.)
-             call ice_read_nc(nu_restoring, 1, 'isoice'//trim(nchar), trcrn_restoring(:,:,nt_isoice+k-1,:,:), diag, restart_ext=.true.)
+             call ice_read_nc(nu_restoring, 1, 'isosno'//trim(nchar), trcrn_restoring(:,:,nt_isosno+k-1,:,:), diag, grid_ext=.true.)
+             call ice_read_nc(nu_restoring, 1, 'isoice'//trim(nchar), trcrn_restoring(:,:,nt_isoice+k-1,:,:), diag, grid_ext=.true.)
           enddo
       endif
 
@@ -447,17 +447,17 @@
       if (tr_aero) then
          do k = 1, n_aero
             write(nchar,'(i3.3)') k
-            call ice_read_nc(nu_restoring, 1, 'aerosnossl'//trim(nchar), trcrn_restoring(:,:,nt_aero  +(k-1)*4,:,:), diag, restart_ext=.true.)
-            call ice_read_nc(nu_restoring, 1, 'aerosnoint'//trim(nchar), trcrn_restoring(:,:,nt_aero+1+(k-1)*4,:,:), diag, restart_ext=.true.)
-            call ice_read_nc(nu_restoring, 1, 'aeroicessl'//trim(nchar), trcrn_restoring(:,:,nt_aero+2+(k-1)*4,:,:), diag, restart_ext=.true.)
-            call ice_read_nc(nu_restoring, 1, 'aeroiceint'//trim(nchar), trcrn_restoring(:,:,nt_aero+3+(k-1)*4,:,:), diag, restart_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'aerosnossl'//trim(nchar), trcrn_restoring(:,:,nt_aero  +(k-1)*4,:,:), diag, grid_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'aerosnoint'//trim(nchar), trcrn_restoring(:,:,nt_aero+1+(k-1)*4,:,:), diag, grid_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'aeroicessl'//trim(nchar), trcrn_restoring(:,:,nt_aero+2+(k-1)*4,:,:), diag, grid_ext=.true.)
+            call ice_read_nc(nu_restoring, 1, 'aeroiceint'//trim(nchar), trcrn_restoring(:,:,nt_aero+3+(k-1)*4,:,:), diag, grid_ext=.true.)
          enddo
       endif
 
       ! brine
 
       if (tr_brine) then
-         call ice_read_nc(nu_restoring, 1, 'fbrn', trcrn_restoring(:,:,nt_fbri,:,:), diag, restart_ext=.true.)
+         call ice_read_nc(nu_restoring, 1, 'fbrn', trcrn_restoring(:,:,nt_fbri,:,:), diag, grid_ext=.true.)
       endif
 
       ! bgc - To Be Done

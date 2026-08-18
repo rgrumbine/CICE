@@ -708,9 +708,9 @@
       subroutine transport_upwind (dt)
 
       use ice_boundary, only: ice_HaloUpdate, ice_HaloExtrapolate
-      use ice_blocks, only: nx_block, ny_block, block, get_block, nx_block, ny_block
-      use ice_domain, only: blocks_ice, halo_info, nblocks, distrb_info, &
+      use ice_blocks, only: nx_block, ny_block, block, get_block, nx_block, ny_block, &
           ew_boundary_type, ns_boundary_type
+      use ice_domain, only: blocks_ice, halo_info, nblocks, distrb_info
       use ice_domain_size, only: ncat, max_blocks
       use ice_state, only: aice0, aicen, vicen, vsnon, trcrn, &
           uvel, vvel, trcr_depend, trcr_base, &

@@ -154,9 +154,9 @@
       use ice_arrays_column, only: Cdn_ocn
       use ice_boundary, only: ice_HaloMask, ice_HaloUpdate, &
           ice_HaloDestroy, ice_HaloUpdate_stress
-      use ice_blocks, only: block, get_block, nx_block, ny_block
-      use ice_domain, only: blocks_ice, halo_info, maskhalo_dyn, &
+      use ice_blocks, only: block, get_block, nx_block, ny_block, &
           ns_boundary_type
+      use ice_domain, only: blocks_ice, halo_info, maskhalo_dyn
       use ice_domain_size, only: max_blocks, ncat
       use ice_dyn_shared, only: deformations, iceTmask, iceUmask, &
           cxp, cyp, cxm, cym
@@ -2493,7 +2493,8 @@
                                    vector2_x , vector2_y) &
                result(dot_product)
 
-      use ice_domain, only: distrb_info, ns_boundary_type
+      use ice_blocks, only: ns_boundary_type
+      use ice_domain, only: distrb_info
       use ice_domain_size, only: max_blocks
       use ice_fileunits, only: bfbflag
 

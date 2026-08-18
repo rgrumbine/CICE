@@ -265,10 +265,9 @@
 
       subroutine init_dyn_shared (dt)
 
-      use ice_blocks, only: block, get_block
+      use ice_blocks, only: block, get_block, ns_boundary_type
       use ice_boundary, only: ice_halo, ice_haloUpdate
-      use ice_domain, only: nblocks, halo_dynbundle, blocks_ice, halo_info, &
-          ns_boundary_type
+      use ice_domain, only: nblocks, halo_dynbundle, blocks_ice, halo_info
       use ice_domain_size, only: max_blocks
       use ice_flux, only: &
           stressp_1, stressp_2, stressp_3, stressp_4, &

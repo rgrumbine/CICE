@@ -414,7 +414,7 @@
          if (trestore == c0) then
             frestore = c1      ! use data instantaneously
          else
-            frestore = max(dt/(trestore*secday),c1)
+            frestore = min(dt/(trestore*secday),c1)
          endif
       endif
 
